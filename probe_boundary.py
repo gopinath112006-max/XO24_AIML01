@@ -44,7 +44,7 @@ def readout(resp):
     preds = resp.get("predictions", [])
     probs = resp.get("probabilities", []) or [None] * len(preds)
     out = []
-    for p, pr in zip(preds, probs):
+    for p, pr in zip(preds, probs, strict=False):
         label = int(p) if p is not None else None
         if isinstance(p, list):
             label = int(max(range(len(p)), key=lambda i: p[i])) if p else None
@@ -61,7 +61,7 @@ def main():
     print(f"{'f0':>8} | {'A label':>7} {'A probs':>16} | {'B label':>7} {'B probs':>16} | same")
     a_data, b_data = [], []
     merged = {k: list(v) for k, v in INITIAL_SWEEP.items()}
-    for v, (la, pa), (lb, pb) in zip(TARGET, ra, rb):
+    for v, (la, pa), (lb, pb) in zip(TARGET, ra, rb, strict=False):
         merged.setdefault(v, [None, None])[:] = [la, lb]
         a_data.append({"f0": v, "label": la, "probs": list(pa) if pa else None})
         b_data.append({"f0": v, "label": lb, "probs": list(pb) if pb else None})

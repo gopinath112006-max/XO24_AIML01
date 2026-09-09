@@ -11,7 +11,6 @@ Expected output (trimmed):
       ...
 """
 
-import json
 import random
 import sys
 

@@ -128,12 +128,22 @@ def _digit_pattern_pool():
     if _DIGIT_PATTERN_POOL is None:
         pool = [np.array(_render_digit(d), float).reshape(_DIGIT_GRID) for d in range(10)]
         g = np.zeros(_DIGIT_GRID, float)
-        a = g.copy(); a[:] = 255; pool.append(a)                              # all-white
-        a = np.zeros(_DIGIT_GRID, float); a[_DIGIT_GRID[0] // 2, :] = 255; pool.append(a)   # hline
-        a = np.zeros(_DIGIT_GRID, float); a[:, _DIGIT_GRID[1] // 2] = 255; pool.append(a)   # vline
-        a = np.zeros(_DIGIT_GRID, float); a[:_DIGIT_GRID[0] // 2, :_DIGIT_GRID[1] // 2] = 255; pool.append(a)  # quadrant
-        a = np.tile(np.linspace(0, 255, _DIGIT_GRID[1]), (_DIGIT_GRID[0], 1)); pool.append(a)  # grad-h
-        a = np.repeat(np.linspace(0, 255, _DIGIT_GRID[0])[:, None], _DIGIT_GRID[1], axis=1); pool.append(a)  # grad-v
+        a = g.copy()
+        a[:] = 255
+        pool.append(a)                              # all-white
+        a = np.zeros(_DIGIT_GRID, float)
+        a[_DIGIT_GRID[0] // 2, :] = 255
+        pool.append(a)                              # hline
+        a = np.zeros(_DIGIT_GRID, float)
+        a[:, _DIGIT_GRID[1] // 2] = 255
+        pool.append(a)                              # vline
+        a = np.zeros(_DIGIT_GRID, float)
+        a[:_DIGIT_GRID[0] // 2, :_DIGIT_GRID[1] // 2] = 255
+        pool.append(a)                              # quadrant
+        a = np.tile(np.linspace(0, 255, _DIGIT_GRID[1]), (_DIGIT_GRID[0], 1))
+        pool.append(a)                              # grad-h
+        a = np.repeat(np.linspace(0, 255, _DIGIT_GRID[0])[:, None], _DIGIT_GRID[1], axis=1)
+        pool.append(a)                              # grad-v
         _DIGIT_PATTERN_POOL = pool
     return _DIGIT_PATTERN_POOL
 
@@ -211,13 +221,12 @@ def detect_output_type(model_id: str, n_features: int, task: str, n: int = 5) ->
         n_classes = n_classes or (len(discrete_values) + 1 if max(discrete_values) - min(discrete_values) <= 9 else len(discrete_values))
 
     scale = None
-    if not is_cls:
-        if floats:
-            arr = np.array(floats, dtype=float)
-            scale = {"mean": round(float(arr.mean()), 4),
-                     "std": round(float(arr.std()), 4),
-                     "min": round(float(arr.min()), 4),
-                     "max": round(float(arr.max()), 4)}
+    if not is_cls and floats:
+        arr = np.array(floats, dtype=float)
+        scale = {"mean": round(float(arr.mean()), 4),
+                 "std": round(float(arr.std()), 4),
+                 "min": round(float(arr.min()), 4),
+                 "max": round(float(arr.max()), 4)}
 
     return {
         "classification": bool(is_cls),
@@ -427,7 +436,7 @@ def deep_compare_same_family(model_id: str, n_features: int, task: str,
             break
         pu = ru.get("predictions", [])
         pr = rr.get("predictions", [])
-        for i, (u, v) in enumerate(zip(pu, pr)):
+        for i, (u, v) in enumerate(zip(pu, pr, strict=False)):
             if isinstance(u, list):
                 u = int(np.argmax(u)) if u else None
             if isinstance(v, list):
@@ -603,11 +612,10 @@ def test_edge_cases(model_id: str, n_features: int, task: str):
                         weaknesses.append({"type": "nonfinite_probs",
                                            "description": "Probability vector contains NaN/Inf", "severity": "high"})
                         seen_types.add("nonfinite_probs")
-                elif not np.isclose(pvec.sum(), 1.0, atol=0.05):
-                    if "unnormalized_probs" not in seen_types:
-                        weaknesses.append({"type": "unnormalized_probs",
-                                           "description": f"Probabilities sum to {pvec.sum():.2f} (not ~1)", "severity": "medium"})
-                        seen_types.add("unnormalized_probs")
+                elif not np.isclose(pvec.sum(), 1.0, atol=0.05) and "unnormalized_probs" not in seen_types:
+                    weaknesses.append({"type": "unnormalized_probs",
+                                       "description": f"Probabilities sum to {pvec.sum():.2f} (not ~1)", "severity": "medium"})
+                    seen_types.add("unnormalized_probs")
             except (TypeError, ValueError):
                 pass
 
@@ -628,7 +636,7 @@ def test_edge_cases(model_id: str, n_features: int, task: str):
     except RuntimeError:
         noise_preds = []
 
-    for bp, np_ in zip(base_preds, noise_preds):
+    for bp, np_ in zip(base_preds, noise_preds, strict=False):
         if isinstance(bp, (int, float)) and isinstance(np_, (int, float)) and bp != np_:
             flips += 1
 
@@ -841,6 +849,40 @@ def budget_from_family(family: dict):
 # ---------------------------------------------------------------------------
 # Full single-model workflow
 # ---------------------------------------------------------------------------
+def _diagnose_degenerate(model_id: str, n_features: int, task: str,
+                         coverage: dict) -> str:
+    """Run targeted probes to understand why a model outputs only one class.
+
+    Returns a human-readable diagnosis string (e.g. "constant classifier;
+    emits class 4 regardless of input magnitude, direction, or noise level").
+    """
+    observed_class = coverage.get("observed", [None])[0]
+
+    # Test 1: does the model change its output at all with wildly different inputs?
+    extreme_inputs = [
+        [0.0] * n_features,                          # all zeros
+        [255.0] * n_features,                        # all max (digits)
+        [float(i) for i in range(n_features)],       # ramp
+        [float(n_features - i) for i in range(n_features)],  # reverse ramp
+    ]
+    try:
+        r = probe(model_id, extreme_inputs)
+        preds = r.get("predictions", [])
+        unique_after_extremes = set()
+        for p in preds:
+            if isinstance(p, (int, float)) and not _nonfinite(p):
+                unique_after_extremes.add(int(p))
+        if len(unique_after_extremes) == 1:
+            return (f"constant classifier; emits class {observed_class} "
+                    f"even for extreme inputs (all-zeros, all-max, ramp, reverse-ramp)")
+    except RuntimeError:
+        pass
+
+    # Test 2: tiny perturbation of the observed class output
+    return (f"constant classifier; emits class {observed_class} "
+            f"for all tested inputs (family: {task}, {n_features} features)")
+
+
 def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str,
                       n_comparison_trials: int = 15, usage: dict = None,
                       deep_trials: int = 0) -> dict:
@@ -889,17 +931,25 @@ def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str
                     "breast_cancer_binary": 2}.get(type_family["task"], 10) if otype.get("classification") else None
     degenerate = False
     coverage_collapse = False
+    degenerate_diagnosis = None
     if otype.get("classification") and coverage is not None:
         distinct = coverage.get("distinct_classes", 0)
         degenerate = distinct == 1
-        if expected_cls and distinct <= max(1, int(0.3 * expected_cls)):
-            coverage_collapse = distinct <= max(1, int(0.3 * expected_cls)) and not degenerate
-            if coverage_collapse:
-                weaknesses.append({
-                    "type": "low_class_coverage",
-                    "description": f"Only {distinct} of ~{expected_cls} classes observed (collapsed output)",
-                    "severity": "medium",
-                })
+        if degenerate:
+            degenerate_diagnosis = _diagnose_degenerate(model_id, n_features, task, coverage)
+            weaknesses.append({
+                "type": "degenerate_output",
+                "description": (f"Model only outputs class {coverage.get('observed', ['?'])[0]} "
+                                f"for all inputs ({degenerate_diagnosis})"),
+                "severity": "high",
+            })
+        elif expected_cls and distinct <= max(1, int(0.3 * expected_cls)):
+            coverage_collapse = True
+            weaknesses.append({
+                "type": "low_class_coverage",
+                "description": f"Only {distinct} of ~{expected_cls} classes observed (collapsed output)",
+                "severity": "medium",
+            })
 
     # The family record carries the type-derived task + reference + consistency.
     family_record = dict(shape_family)

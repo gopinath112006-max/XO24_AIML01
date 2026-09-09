@@ -29,7 +29,6 @@ import config
 import starter_kit
 from starter_code_snippets import profile_one_model
 
-
 # ---------------------------------------------------------------------------
 # Budget-aware probe allocation
 # ---------------------------------------------------------------------------
@@ -119,7 +118,7 @@ def _load_existing_profiles(path):
     if not os.path.exists(path):
         return []
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
     except (ValueError, OSError):
         return []

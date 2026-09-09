@@ -40,10 +40,6 @@ MAX_FEATURES = 34
 # ---------------------------------------------------------------------------
 # API helpers (pool-aware, batched)
 # ---------------------------------------------------------------------------
-def _predict(model_id: str, rows: list) -> dict:
-    return starter_kit.predict(model_id, rows, base_url=POOL)
-
-
 def _labels(resp: dict) -> list:
     """Predictions as ints (argmax if a probability vector came back)."""
     out = []
@@ -111,16 +107,18 @@ def _extreme_rows() -> list:
     base = _family_rows(1)[0]
     perm = list(range(n))
     rng.shuffle(perm)
-    rows.append([base[i] for i in perm]); labels.append("permuted")
-    rows.append(list(reversed(base))); labels.append("mirrored")
-    rows.append([(11.0 - (v - 10.0)) for v in base]); labels.append("mirror-around-center")
+    rows.append([base[i] for i in perm])
+    labels.append("permuted")
+    rows.append(list(reversed(base)))
+    labels.append("mirrored")
+    rows.append([(11.0 - (v - 10.0)) for v in base])
+    labels.append("mirror-around-center")
     return rows, labels
 
 
 def _mutate_rows(fix: list, features: list, n_per_feature: int = 2) -> list:
     """Targeted boundary hunt: vary the given features around a fixed seed."""
     out = []
-    n = len(fix)
     for fi in features:
         base = list(fix)
         for _ in range(n_per_feature):
@@ -141,23 +139,21 @@ def _sample_rows(n, lo, hi):
 def compare_models(a_id: str = MODEL_A, b_id: str = MODEL_B,
                    budget_cap: int = DEFAULT_BUDGET_CAP,
                    base_url: str = POOL, dry_run: bool = False) -> dict:
-    global POOL
-    POOL = base_url
+    pool_url = base_url
     n = MAX_FEATURES
     family = infer_task_by_shape(n)
     task = family["task"]
     print(f"Comparing {a_id} vs {b_id} (34 features -> {task}, budget {budget_cap} ea.)")
 
     evidence = {"trials": [], "disagreements": [], "patterns": [], "parity": {}}
-    probes = {a_id: 0, b_id: 0}
     spend = 0  # per model; symmetric since both see every row
 
     def run_scan(rows, kind, names=None):
         nonlocal spend
         if dry_run:
             return
-        ra = _predict(a_id, rows)
-        rb = _predict(b_id, rows)
+        ra = starter_kit.predict(a_id, rows, base_url=pool_url)
+        rb = starter_kit.predict(b_id, rows, base_url=pool_url)
         spend += len(rows)
         la, lb = _labels(ra), _labels(rb)
         pa, pb = _probs(ra), _probs(rb)
@@ -185,19 +181,19 @@ def compare_models(a_id: str = MODEL_A, b_id: str = MODEL_B,
         evidence["trials"].append({
             "kind": kind,
             "rows": len(rows),
-            "label_agreement": (sum(1 for x, y in zip(la, lb) if x == y) / k) if k else None,
+            "label_agreement": (sum(1 for x, y in zip(la, lb, strict=False) if x == y) / k) if k else None,
             "strict_agreement": agree / k if k else None,
         })
         print(f"  [{kind:<20}] rows={len(rows):>3} label_agree="
-              f"{(sum(1 for x, y in zip(la, lb) if x == y) / k if k else 0):.3f} "
+              f"{(sum(1 for x, y in zip(la, lb, strict=False) if x == y) / k if k else 0):.3f} "
               f"strict={agree / k if k else 0:.3f} (probes/model +{len(rows)})")
         print(f"    A labels: {la}")
 
     # Round 0 — output format parity (cheap, 6 rows).
     if not dry_run:
         rows = _family_rows(6)
-        ra = _predict(a_id, rows)
-        rb = _predict(b_id, rows)
+        ra = starter_kit.predict(a_id, rows, base_url=pool_url)
+        rb = starter_kit.predict(b_id, rows, base_url=pool_url)
         spend += 6
         pa, pb = _probs(ra), _probs(rb)
         evidence["parity"] = {
@@ -241,7 +237,6 @@ def compare_models(a_id: str = MODEL_A, b_id: str = MODEL_B,
 
     # Classify disagreements: label flips vs probability-only differences.
     label_diffs = [d for d in evidence["disagreements"] if d["type"] == "label"]
-    prob_diffs = [d for d in evidence["disagreements"] if d["type"] == "prob"]
 
     # For label diffs, note which features are anomalous (off the family center).
     def spike_indices(row, center=10.0, tol=8.0):
@@ -263,7 +258,7 @@ def compare_models(a_id: str = MODEL_A, b_id: str = MODEL_B,
     result = {
         "model_a": a_id,
         "model_b": b_id,
-        "pool": POOL,
+        "pool": pool_url,
         "task_family": task,
         "n_features": n,
         "probes_used_per_model": spend,
@@ -287,10 +282,8 @@ def compare_models(a_id: str = MODEL_A, b_id: str = MODEL_B,
 
 def enrich_result(r: dict) -> dict:
     """Derive classification/verdict/finding from a raw saved result (no probes)."""
-    n = r.get("n_features") or MAX_FEATURES
     total_rows = r.get("total_probe_rows") or sum(t.get("rows", 0) for t in r.get("trials", []))
     strict_agree_overall = r.get("agreement_strict")
-    label_agree_overall = r.get("agreement_label")
 
     def spikes(row, center=10.0, tol=8.0):
         return [f"f{i}={row[i]}" for i in range(len(row)) if abs(row[i] - center) > tol]

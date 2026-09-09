@@ -7,8 +7,10 @@ HERE = os.path.dirname(__file__)
 
 
 def main():
-    profile = json.load(open(os.path.join(HERE, "surprise1_profile.json"), encoding="utf-8"))
-    sweep = json.load(open(os.path.join(HERE, "surprise1_f0_sweep.json"), encoding="utf-8"))
+    with open(os.path.join(HERE, "surprise1_profile.json"), encoding="utf-8") as f:
+        profile = json.load(f)
+    with open(os.path.join(HERE, "surprise1_f0_sweep.json"), encoding="utf-8") as f:
+        sweep = json.load(f)
 
     label_examples = []
     for d in profile.get("label_differences", [])[:4]:
@@ -31,8 +33,8 @@ def main():
         "confidence": profile["confidence"],
         "are_they_different": profile["verdict"] == "different",
         "evidence": {
-            "probes_used_per_model": 196,
-            "budget_per_model": 200,
+            "probes_used_per_model": profile.get("probes_used_per_model", 0),
+            "budget_per_model": profile.get("budget_per_model", 200),
             "label_agreement": profile["agreement_label"],
             "strict_agreement_labels_and_probs": profile["agreement_strict"],
             "label_flips_count": profile["label_difference_count"],
@@ -98,7 +100,8 @@ With all 34 features pinned at center value **10** and only **feature 0** varied
 ### Example disagreement inputs
 
 {"".join(
-    f"- f0 spike row `{ex['input'][:4]}...`: A predicts **{ex['model_A_prediction']}** (probs {[round(x,3) for x in ex['model_A_probs']] or 'n/a'}), B predicts **{ex['model_B_prediction']}** (probs {[round(x,3) for x in ex['model_B_probs']] or 'n/a'})\n"
+    f"- f0 spike row `{ex['input'][:4]}...`: A predicts **{ex['model_A_prediction']}** (probs {[round(x,3) for x in ex['model_A_probs']] or 'n/a'}), B predicts **{ex['model_B_prediction']}** (probs {[round(x,3) for x in ex['model_B_probs']] or 'n/a'})"
+    + chr(10)
     for ex in answer["trigger"]["example_inputs"])
 }
 

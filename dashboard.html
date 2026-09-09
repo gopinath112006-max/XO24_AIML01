@@ -189,6 +189,51 @@
     .hidden { display: none; }
     footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; border-top: 1px solid var(--card-border); }
     .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 15px; }
+    .surprise-section {
+      background: linear-gradient(135deg, #16213a, #1e293b);
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+    .surprise-section h3 { font-size: 18px; margin-bottom: 14px; color: #f59e0b; }
+    .surprise-verdict {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 14px;
+    }
+    .surprise-verdict.different { background: var(--low-bg); color: var(--low-text); }
+    .surprise-verdict.same { background: var(--high-bg); color: var(--high-text); }
+    .surprise-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+    .surprise-metric {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .surprise-metric .m-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .surprise-metric .m-value { font-size: 15px; font-weight: 600; margin-top: 3px; }
+    .surprise-trigger {
+      background: #0f172a;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    .surprise-trigger h5 { color: #f59e0b; margin-bottom: 8px; }
+    .surprise-trigger table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    .surprise-trigger th, .surprise-trigger td { padding: 6px 10px; border: 1px solid var(--card-border); text-align: center; }
+    .surprise-trigger th { background: #16213a; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .surprise-trigger td.diverge { background: #451a03; color: #fbbf24; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -493,6 +538,80 @@
       }
     }
 
+    function renderSurpriseChallenge(data) {
+      if (!data) return '';
+      const v = data.verdict || 'unknown';
+      const verdictCls = v === 'different' ? 'different' : 'same';
+      const e = data.evidence || {};
+      const t = data.trigger || {};
+      const f0Band = t.divergence_band || {};
+      const exampleRows = (t.example_inputs || []).map(ex => {
+        const inputPreview = (ex.input || []).slice(0, 4).map(v => Math.round(v * 10) / 10).join(', ');
+        const aProb = ex.model_A_probs ? Math.max(...ex.model_A_probs).toFixed(3) : '—';
+        const bProb = ex.model_B_probs ? Math.max(...ex.model_B_probs).toFixed(3) : '—';
+        return `<tr>
+          <td title="${JSON.stringify(ex.input)}">${inputPreview}...</td>
+          <td>${ex.model_A_prediction} (${aProb})</td>
+          <td>${ex.model_B_prediction} (${bProb})</td>
+        </tr>`;
+      }).join('');
+
+      return `
+        <div class="surprise-section">
+          <h3>Surprise Challenge 1 — Spot the Difference</h3>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            Models: <code style="color:var(--accent)">${data.models?.A || 's1_model_a'}</code> vs
+            <code style="color:var(--accent)">${data.models?.B || 's1_model_b'}</code> ·
+            Task: ${data.task_family || 'unknown'} (${data.n_features} features)
+          </div>
+          <div class="surprise-verdict ${verdictCls}">${v.toUpperCase()} (confidence ${data.confidence || '—'})</div>
+          <div class="surprise-grid">
+            <div class="surprise-metric">
+              <div class="m-label">Label Agreement</div>
+              <div class="m-value">${e.label_agreement != null ? (e.label_agreement * 100).toFixed(1) + '%' : '—'}</div>
+            </div>
+            <div class="surprise-metric">
+              <div class="m-label">Strict Agreement (label + probs)</div>
+              <div class="m-value">${e.strict_agreement_labels_and_probs != null ? (e.strict_agreement_labels_and_probs * 100).toFixed(1) + '%' : '—'}</div>
+            </div>
+            <div class="surprise-metric">
+              <div class="m-label">Label Flips</div>
+              <div class="m-value">${e.label_flips_count ?? '—'}</div>
+            </div>
+            <div class="surprise-metric">
+              <div class="m-label">Prob-only Disagreements</div>
+              <div class="m-value">${e.prob_only_disagreement_count ?? '—'}</div>
+            </div>
+            <div class="surprise-metric">
+              <div class="m-label">Probes / Model</div>
+              <div class="m-value">${e.probes_used_per_model ?? '—'} / ${e.budget_per_model ?? '—'}</div>
+            </div>
+          </div>
+          ${t.kind ? `
+          <div class="surprise-trigger">
+            <h5>Exact Trigger</h5>
+            <p style="margin:4px 0;">${t.meaning || t.kind}</p>
+            ${f0Band.min != null ? `
+            <table>
+              <thead><tr><th>Feature 0 range</th><th>Model A</th><th>Model B</th><th>Result</th></tr></thead>
+              <tbody>
+                <tr><td>≤ ${t.A_class0_boundary != null ? (t.A_class0_boundary - 0.5) : '?'}</td><td>class 1</td><td>class 1</td><td>agree</td></tr>
+                <tr class="diverge-row"><td>${f0Band.min} – ${f0Band.max}</td><td>class 0</td><td>class 1</td><td class="diverge">DIVERGE</td></tr>
+                <tr><td>≥ ${t.B_class0_boundary != null ? t.B_class0_boundary : '?'}</td><td>class 0</td><td>class 0</td><td>agree</td></tr>
+              </tbody>
+            </table>` : ''}
+            ${exampleRows ? `
+            <h5 style="margin-top:12px;">Example Disagreements</h5>
+            <table>
+              <thead><tr><th>Input (first 4 features)</th><th>Model A</th><th>Model B</th></tr></thead>
+              <tbody>${exampleRows}</tbody>
+            </table>` : ''}
+          </div>` : ''}
+          ${data.finding ? `<p style="margin-top:14px;font-size:13px;color:var(--text);font-style:italic;">"${data.finding}"</p>` : ''}
+        </div>
+      `;
+    }
+
     function init() {
       document.querySelectorAll('.controls button').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -503,14 +622,21 @@
       });
       document.getElementById('sortSelect').addEventListener('change', () => render(allProfiles));
 
-      loadProfiles()
-        .then(profiles => {
+      Promise.all([
+        loadProfiles(),
+        fetch('surprise1_answer.json').then(r => r.ok ? r.json() : null).catch(() => null)
+      ])
+        .then(([profiles, surprise1]) => {
           allProfiles = profiles;
           if (generatedAt) {
             const el = document.getElementById('generatedAtLine');
             el.textContent = 'last updated ' + generatedAt.replace('T', ' ').replace('Z', ' UTC');
           }
           render(profiles);
+          if (surprise1) {
+            const mainEl = document.getElementById('main');
+            mainEl.insertAdjacentHTML('afterbegin', renderSurpriseChallenge(surprise1));
+          }
         })
         .catch(err => {
           document.getElementById('main').innerHTML =

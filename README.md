@@ -55,8 +55,6 @@ You're given access to 13 machine learning models through a simple REST API. You
 ```
 .
 ├── README.md                          ← This file
-├── Given/                             ← Official challenge pack (guide, refs, surprise-1 readme)
-│
 ├── starter_kit.py                     ← API client (list_models / predict / get_usage)
 ├── starter_code_snippets.py           ← Core profiling primitives (incl. deep compare)
 ├── profiler.py                        ← Full 13-model profiling pipeline (--deep)
@@ -105,17 +103,17 @@ Expected output:
   ...
 ```
 
-### 3. Read the Cheat Sheet
+### 3. Read the Methodology
 
 ```bash
-cat CHEAT_SHEET.md
+cat METHODOLOGY.md
 ```
 
-Print it. **Everything you need is on 1 page.**
+Our profiling approach in 1 page.
 
 ### 4. Understand the Strategy
 
-Read Phase 0-1 of `hackathon_concrete_plan.md` (15 min). The strategy is:
+Read `METHODOLOGY.md` (10 min). The strategy is:
 
 1. **Shape matching** (free) — Feature count → likely task
 2. **Reference comparison** (30 probes) — Send same inputs to unknown + reference
@@ -554,10 +552,8 @@ You'll learn:
 | File | Purpose | When to Read |
 |------|---------|--------------|
 | **README.md** (this file) | Project overview | First (you're reading it) |
-| **CHEAT_SHEET.md** | 1-page quick reference | Print it, keep it handy |
-| **hackathon_concrete_plan.md** | 6-phase detailed plan | Hour 0 (skim Phase 0-1) |
-| **PARTICIPANT_GUIDE.md** | Official rules & FAQ | Hour 0 |
-| **general_reference_docs.md** | Reference model specs | Hour 0 |
+| **METHODOLOGY.md** | Profiling approach & confidence formula | Hour 0 |
+| **config.py** | Central configuration & credentials | Hour 0 |
 | **starter_kit.py** | Working API examples | Hour 0 (run it) |
 | **starter_code_snippets.py** | Copy-paste functions | Hour 1 (start profiling) |
 
@@ -566,10 +562,10 @@ You'll learn:
 ## 🚀 Get Started Now
 
 1. **Read this README** (you just did!)
-2. **Print CHEAT_SHEET.md** and keep it on your desk
-3. **Fill in credentials** in starter_kit.py
+2. **Read METHODOLOGY.md** — our profiling approach
+3. **Fill in credentials** in config.py
 4. **Run starter_kit.py** to confirm API access
-5. **Skim Phase 0-1** of hackathon_concrete_plan.md
+5. **Read METHODOLOGY.md** for the strategy
 6. **Assign team roles:** Backend, Frontend, Strategy, DevOps
 7. **Start profiling** using starter_code_snippets.py
 
