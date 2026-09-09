@@ -194,7 +194,9 @@
 <body>
   <header>
     <h1>🤖 ML Model Profiling Dashboard</h1>
-    <p>13 undocumented models profiled through black-box API probing</p>
+    <p>13 undocumented models profiled through black-box API probing
+       · <span id="generatedAtLine">last updated unknown</span>
+       · <a href="https://github.com/gopinath112006-max/XO24_AIML01/blob/main/METHODOLOGY.md" target="_blank" rel="noopener" style="color:#38bdf8;">methodology</a></p>
   </header>
 
   <div class="stats-bar" id="statsBar"></div>
@@ -217,17 +219,25 @@
 
   <main id="main"></main>
 
-  <footer>Evidence-backed profiling · Confidence reflects probe investment · Honest uncertainty over speculation</footer>
+  <footer>Evidence-backed profiling · Confidence reflects probe investment · Honest uncertainty over speculation ·
+    <a href="https://github.com/gopinath112006-max/XO24_AIML01/blob/main/METHODOLOGY.md" target="_blank" rel="noopener" style="color:var(--accent);">Read the methodology</a>
+  </footer>
 
   <script>
     const POOL_ORDER = { reference: 0, practice: 1, held_out: 2 };
     const POOL_LABEL = { reference: "Reference", practice: "Practice", held_out: "Held-Out" };
 
     let allProfiles = [];
+    let generatedAt = null;
 
     function loadProfiles() {
       return fetch('profiles.json')
-        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(data => {
+          if (Array.isArray(data)) return data;               // legacy flat list
+          generatedAt = data.generated_at || null;
+          return data.profiles || [];
+        });
     }
 
     function confClass(c) {
@@ -249,12 +259,14 @@
     function renderStats(profiles) {
       const s = profileStats(profiles);
       const pct = s.totalBudget ? ((s.totalUsed / s.totalBudget) * 100).toFixed(1) : "0";
+      const remaining = Math.max(0, s.totalBudget - s.totalUsed);
       document.getElementById('statsBar').innerHTML = `
         <div class="stat"><div class="value">${s.total}</div><div class="label">Models</div></div>
         <div class="stat"><div class="value">${(s.avgConf * 100).toFixed(0)}%</div><div class="label">Avg Confidence</div></div>
         <div class="stat"><div class="value">${s.high}</div><div class="label">High Conf (&ge;80%)</div></div>
         <div class="stat"><div class="value">${s.low}</div><div class="label">Low Conf (&lt;60%)</div></div>
-        <div class="stat"><div class="value">${s.totalUsed}/${s.totalBudget}</div><div class="label">Probes (${pct}%)</div></div>
+        <div class="stat"><div class="value">${s.totalUsed}/${s.totalBudget}</div><div class="label">Probes Used (${pct}%)</div></div>
+        <div class="stat"><div class="value">${remaining.toLocaleString()}</div><div class="label">Probes Remaining</div></div>
       `;
     }
 
@@ -286,6 +298,12 @@
       if (ev.scale_mismatch) {
         parts.push(`<span class="warn-scalemismatch">⚠️ Scale mismatch vs reference</span>`);
       }
+      if (ev.degenerate) {
+        parts.push(`<span class="warn-scalemismatch">♻️ Degenerate output (single class seen)</span>`);
+      }
+      if (ev.coverage_collapse) {
+        parts.push(`<span class="warn-scalemismatch">🌑 Collapsed class coverage</span>`);
+      }
       parts.push(`<span>🧪 Comparison probes: ${ev.comparison_probes || 0}</span>`);
       parts.push(`<span>⚡ Edge case tests: ${ev.edge_case_tests || 0}</span>`);
       if (p.class_coverage && p.class_coverage.observed && p.class_coverage.observed.length) {
@@ -295,6 +313,41 @@
       return `<div class="evidence">${parts.join('')}</div>`;
     }
 
+    function confBreakdown(p) {
+      // Mirrors calculate_confidence() so reviewers can audit any number.
+      const ev = p.evidence || {};
+      const ot = p.output_type || {};
+      const cov = p.class_coverage || {};
+      const expCls = ({ 'mnist_digits_10class': 10, 'wine_classification_3class': 3, 'breast_cancer_binary': 2 })[p.inferred_task] || ot.n_classes || 10;
+      let add = [];
+      let sub = [];
+      if (ev.shape_match && ev.type_consistent !== false) add.push('+0.20 type/shape');
+      else if (ev.shape_match && ev.type_consistent === null) add.push('+0.10 type/shape');
+      const covOk = cov.observed && cov.observed.length && cov.distinct_classes >= Math.max(2, Math.round(0.5 * expCls));
+      if (covOk) add.push('+0.10 coverage');
+      const a = p.agreement_with_reference;
+      if (a != null) {
+        if (a > 0.90) add.push('+0.45 agreement');
+        else if (a > 0.80) add.push('+0.36 agreement');
+        else if (a > 0.70) add.push('+0.25 agreement');
+      }
+      add.push(`+${(0.15 * Math.min(1, (ev.comparison_probes || 0) / 30)).toFixed(2)} probes`);
+      if (ev.scale_mismatch) sub.push('−0.10 scale mismatch');
+      if (ev.degenerate) sub.push('−0.15 degenerate');
+      if (ev.coverage_collapse) sub.push('−0.10 collapsed coverage');
+      if ((p.weaknesses || []).some(w => w.severity === 'high')) sub.push('−0.05 high weakness');
+      let s = ev.shape_match && ev.type_consistent !== false ? 0.20 : (ev.shape_match && ev.type_consistent === null ? 0.10 : 0);
+      if (covOk) s += 0.10;
+      if (a != null) { if (a > 0.90) s += 0.45; else if (a > 0.80) s += 0.36; else if (a > 0.70) s += 0.25; }
+      s += 0.15 * Math.min(1, (ev.comparison_probes || 0) / 30);
+      if (ev.scale_mismatch) s = Math.max(0, s - 0.10);
+      if (ev.degenerate) s = Math.max(0.10, s - 0.15);
+      if (ev.coverage_collapse) s = Math.max(0.10, s - 0.10);
+      if ((p.weaknesses || []).some(w => w.severity === 'high')) s = Math.max(0, s - 0.05);
+      const text = [...add, ...sub].join(' · ') || 'no evidence yet';
+      return { text, computed: s };
+    }
+
     function renderCard(p) {
       const confCls = confClass(p.task_confidence);
       const used = p.probe_utilization && p.probe_utilization.used;
@@ -302,6 +355,7 @@
       const pct = budget ? Math.round((used / budget) * 100) : 0;
       const ev = p.evidence || {};
       const ot = p.output_type || {};
+      const breakdown = confBreakdown(p);
       return `
         <div class="model-card">
           <div class="top-row">
@@ -311,6 +365,7 @@
             </div>
             <span class="conf ${confCls}">${Math.round(p.task_confidence * 100)}%</span>
           </div>
+          <div class="meter" style="margin-top:10px;background:#0f172a;"><div style="width:${Math.min(100, p.task_confidence * 100)}%;background:${p.task_confidence >= 0.8 ? 'var(--high)' : p.task_confidence >= 0.6 ? 'var(--medium)' : 'var(--low)'};"></div></div>
           <div class="grid">
             <div class="metric">
               <div class="m-label">Performance</div>
@@ -329,6 +384,9 @@
               <div class="m-value">${used}/${budget} (${pct}%)</div>
               <div class="meter"><div style="width:${Math.min(100, pct)}%"></div></div>
             </div>
+          </div>
+          <div class="evidence" style="border-top:none;padding-top:6px;font-size:11px;color:var(--muted);">
+            Confidence = ${breakdown.text}
           </div>
           <div class="weakness-list">
             <h5>Weaknesses / Edge Cases</h5>
@@ -431,6 +489,10 @@
       loadProfiles()
         .then(profiles => {
           allProfiles = profiles;
+          if (generatedAt) {
+            const el = document.getElementById('generatedAtLine');
+            el.textContent = 'last updated ' + generatedAt.replace('T', ' ').replace('Z', ' UTC');
+          }
           render(profiles);
         })
         .catch(err => {

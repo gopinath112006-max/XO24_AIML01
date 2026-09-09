@@ -108,11 +108,40 @@ def build_model_manifest(quick: bool):
 # ---------------------------------------------------------------------------
 # Output writers
 # ---------------------------------------------------------------------------
+def _load_existing_profiles(path):
+    """Return a list of existing profiles, unwrapping the envelope if present."""
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (ValueError, OSError):
+        return []
+    if isinstance(data, dict) and isinstance(data.get("profiles"), list):
+        return data["profiles"]
+    return data if isinstance(data, list) else []
+
+
 def write_profiles(profiles: list):
+    """Persist profiles, preserving already-profiled models on partial runs.
+
+    Writes an envelope {generated_at, profiles} so the dashboard can show a
+    freshness timestamp. On ``--models`` runs, only the requested models are
+    replaced; everything else keeps its prior profile (deterministic order).
+    """
     path = os.path.join(os.path.dirname(__file__), "profiles.json")
+    existing = _load_existing_profiles(path)
+    replaced = {p["model_id"] for p in profiles}
+    merged = [p for p in existing if p["model_id"] not in replaced]
+    merged += profiles
+    # Deterministic order: reference, practice, held-out, then by id.
+    order = {"reference": 0, "practice": 1, "held_out": 9}
+    merged.sort(key=lambda p: (order.get(p.get("pool_set"), 9), p.get("model_id", "")))
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(profiles, f, indent=2)
-    print(f"\nWrote {len(profiles)} profiles -> {path}")
+        json.dump({"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                   "profiles": merged}, f, indent=2)
+    print(f"\nWrote {len(merged)} profiles -> {path}")
+    return merged
 
 
 def record_usage(manifest):

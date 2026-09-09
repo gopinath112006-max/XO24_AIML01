@@ -3,104 +3,32 @@
     "pool_set": "reference",
     "n_features": 70,
     "budget": 10000,
-    "used": 3709,
-    "remaining": 6291,
-    "percent_used": 37.1
-  },
-  "ref_02": {
-    "pool_set": "reference",
-    "n_features": 17,
-    "budget": 10000,
-    "used": 6915,
-    "remaining": 3085,
-    "percent_used": 69.2
+    "used": 6505,
+    "remaining": 3495,
+    "percent_used": 65.0
   },
   "ref_03": {
     "pool_set": "reference",
     "n_features": 34,
     "budget": 10000,
-    "used": 1727,
-    "remaining": 8273,
-    "percent_used": 17.3
-  },
-  "ref_04": {
-    "pool_set": "reference",
-    "n_features": 14,
-    "budget": 10000,
-    "used": 3109,
-    "remaining": 6891,
-    "percent_used": 31.1
-  },
-  "prac_01": {
-    "pool_set": "practice",
-    "n_features": 17,
-    "budget": 10000,
-    "used": 6340,
-    "remaining": 3660,
-    "percent_used": 63.4
-  },
-  "prac_02": {
-    "pool_set": "practice",
-    "n_features": 14,
-    "budget": 10000,
-    "used": 3311,
-    "remaining": 6689,
-    "percent_used": 33.1
-  },
-  "prac_03": {
-    "pool_set": "practice",
-    "n_features": 70,
-    "budget": 10000,
-    "used": 1253,
-    "remaining": 8747,
-    "percent_used": 12.5
-  },
-  "prac_04": {
-    "pool_set": "practice",
-    "n_features": 34,
-    "budget": 10000,
-    "used": 1387,
-    "remaining": 8613,
-    "percent_used": 13.9
-  },
-  "held_01": {
-    "pool_set": "held_out",
-    "n_features": 17,
-    "budget": 10000,
-    "used": 5164,
-    "remaining": 4836,
-    "percent_used": 51.6
-  },
-  "held_02": {
-    "pool_set": "held_out",
-    "n_features": 70,
-    "budget": 10000,
-    "used": 1434,
-    "remaining": 8566,
-    "percent_used": 14.3
-  },
-  "held_03": {
-    "pool_set": "held_out",
-    "n_features": 14,
-    "budget": 10000,
-    "used": 882,
-    "remaining": 9118,
-    "percent_used": 8.8
+    "used": 3846,
+    "remaining": 6154,
+    "percent_used": 38.5
   },
   "held_04": {
     "pool_set": "held_out",
     "n_features": 34,
     "budget": 10000,
-    "used": 546,
-    "remaining": 9454,
-    "percent_used": 5.5
+    "used": 2086,
+    "remaining": 7914,
+    "percent_used": 20.9
   },
   "held_05": {
     "pool_set": "held_out",
     "n_features": 70,
     "budget": 10000,
-    "used": 1924,
-    "remaining": 8076,
-    "percent_used": 19.2
+    "used": 3032,
+    "remaining": 6968,
+    "percent_used": 30.3
   }
 }

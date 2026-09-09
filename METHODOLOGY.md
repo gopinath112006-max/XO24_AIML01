@@ -41,6 +41,22 @@ model (`probe_usage.json`). Order of operations matters:
    (does a classifier emit all its classes?), and probability sanity
    (finite, ~sums to 1).
 
+### Digit-family inputs (70 features)
+
+Random pixel noise collapses every digit model onto a single class, which makes
+coverage and agreement uninformative. We isolate this problem and fix it:
+
+- We tested real MNIST digits downsampled to several 70-cell grids
+  (7×10, 10×7, 5×14, 14×5) against `ref_01` — none were recognized, so the
+  70-dim representation is **not a simple raster** of MNIST.
+- Instead we feed a **structured generator**: synthetic 7×10 digit renderings
+  plus geometric primitives (bars, gradients, quadrants, inversions) with
+  random shifts/scaling. These elicit multiple classes from healthy models
+  (observed: `ref_01` → 5 classes, `prac_03`/`held_02` → 5-6) and exposed
+  **`held_05` as a collapsed classifier** that returns class 4 (or 1-2 classes)
+  for virtually all inputs — exactly the kind of honest surprise we report
+  instead of hiding.
+
 ## 2. Confidence formula (evidence-backed)
 
 Confidence is not a guess — it is a sum of observable evidence:
@@ -54,7 +70,8 @@ Confidence =
 
 Penalties:
   −0.10 if regression scale mismatch detected
-  −0.15 if degenerate / constant-classifier output observed
+  −0.15 if degenerate output (only one class ever observed)
+  −0.10 if collapsed class coverage (far fewer classes than the family expects)
   −0.05 if any high-severity weakness
 Cap at 0.99 — we never claim 100% certainty.
 ```

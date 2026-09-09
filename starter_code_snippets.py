@@ -66,6 +66,8 @@ def _feature_stats(task: str):
 
 
 def _sample_input(n_features: int, task: str, n: int = 1) -> list:
+    if "digits" in task and n_features == _DIGIT_GRID[0] * _DIGIT_GRID[1]:
+        return _sample_digits(n)
     lo, hi, center = _feature_stats(task)
     out = []
     for _ in range(n):
@@ -74,6 +76,85 @@ def _sample_input(n_features: int, task: str, n: int = 1) -> list:
         else:
             row = [random.uniform(lo, hi) for _ in range(n_features)]
         out.append(row)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Structured digit-family generator (70-feature "MNIST" family)
+# ---------------------------------------------------------------------------
+# Random pixel noise collapses every digit model to a single class (both here
+# and empirically), so we instead render synthetic digit-shaped patterns plus
+# a few geometric primitives. These elicit multiple classes from the real
+# classifiers (observed: ref_01 -> {2,4,6,7,8}, prac_03 -> 6 classes), which
+# makes class-coverage and agreement-vs-reference informative again.
+_DIGIT_GRID = (7, 10)  # 7x10 = 70 features
+
+_DIGIT_BITMAPS = {
+    0: [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+    1: ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
+    2: [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
+    3: ["#####", "....#", "....#", "..##.", "....#", "....#", "#####"],
+    4: ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
+    5: ["####.", "#....", "####.", "....#", "....#", "....#", ".###."],
+    6: [".###.", "#....", "#....", "####.", "#...#", "#...#", ".###."],
+    7: ["#####", "....#", "...#.", "..#..", "..#..", "..#..", "..#.."],
+    8: [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
+    9: [".###.", "#...#", "#...#", ".####", "....#", "....#", ".###."],
+}
+
+
+def _render_digit(d: int) -> list:
+    """Render digit d into the 7x10 grid as grayscale 0-255 (anti-aliased)."""
+    rows, cols = _DIGIT_GRID
+    bmp = np.array([[1 if c == "#" else 0 for c in row]
+                    for row in _DIGIT_BITMAPS[int(d)]], dtype=float)
+    res = 8
+    big = bmp[np.ix_((np.arange(rows * res) * 7 // (rows * res)).astype(int),
+                     (np.arange(cols * res) * 5 // (cols * res)).astype(int))]
+    big = np.stack(
+        [np.roll(np.roll(big, di, axis=0), dj, axis=1) for di in (-1, 0, 1) for dj in (-1, 0, 1)]
+    ).mean(axis=0)
+    pooled = big.reshape(rows, res, cols, res).mean(axis=(1, 3))
+    vals = np.round((pooled / pooled.max()) * 255) if pooled.max() > 0 else np.zeros_like(pooled)
+    return [int(v) for v in vals.ravel()]
+
+
+_DIGIT_PATTERN_POOL = None
+
+
+def _digit_pattern_pool():
+    """Cached pool of digit renderings + geometric primitives (7x10 arrays)."""
+    global _DIGIT_PATTERN_POOL
+    if _DIGIT_PATTERN_POOL is None:
+        pool = [np.array(_render_digit(d), float).reshape(_DIGIT_GRID) for d in range(10)]
+        g = np.zeros(_DIGIT_GRID, float)
+        a = g.copy(); a[:] = 255; pool.append(a)                              # all-white
+        a = np.zeros(_DIGIT_GRID, float); a[_DIGIT_GRID[0] // 2, :] = 255; pool.append(a)   # hline
+        a = np.zeros(_DIGIT_GRID, float); a[:, _DIGIT_GRID[1] // 2] = 255; pool.append(a)   # vline
+        a = np.zeros(_DIGIT_GRID, float); a[:_DIGIT_GRID[0] // 2, :_DIGIT_GRID[1] // 2] = 255; pool.append(a)  # quadrant
+        a = np.tile(np.linspace(0, 255, _DIGIT_GRID[1]), (_DIGIT_GRID[0], 1)); pool.append(a)  # grad-h
+        a = np.repeat(np.linspace(0, 255, _DIGIT_GRID[0])[:, None], _DIGIT_GRID[1], axis=1); pool.append(a)  # grad-v
+        _DIGIT_PATTERN_POOL = pool
+    return _DIGIT_PATTERN_POOL
+
+
+def _sample_digits(n: int) -> list:
+    """Generate n structured digit-family input rows (70 features each)."""
+    pool = _digit_pattern_pool()
+    out = []
+    for _ in range(n):
+        base = pool[random.randrange(len(pool))].copy()
+        if random.random() < 0.4:
+            base = np.roll(base, random.randint(-1, 1), axis=0)
+        if random.random() < 0.4:
+            base = np.roll(base, random.randint(-1, 1), axis=1)
+        if random.random() < 0.3:
+            base = np.clip(base * random.uniform(0.6, 1.4), 0, 255)
+        if random.random() < 0.3:
+            base = base + random.gauss(0, 15)
+        if random.random() < 0.15:
+            base = 255.0 - base
+        out.append([int(round(v)) for v in np.clip(base, 0, 255).ravel()])
     return out
 
 
@@ -170,9 +251,8 @@ def infer_task_by_type(otype: dict, shape_family: dict) -> dict:
             ncls = otype.get("n_classes")
         task = shape_task if not shape_is_reg else _class_task_from_n(ncls)
         consistent = not shape_is_reg
-        degenerate = bool(dv and len(dv) == 1)
         return {"task": task, "reference": shape_family["reference"],
-                "type_consistent": consistent, "degenerate": degenerate,
+                "type_consistent": consistent, "degenerate": False,
                 "reason": "classification output"
                            + ("" if otype.get("n_classes") else " (integer labels, no probabilities)")}
     if otype.get("classification") is False and otype.get("regression"):
@@ -428,7 +508,8 @@ def calculate_confidence(shape_match: bool, type_consistent: bool,
                          n_features: int, coverage_ok: bool = None,
                          has_high_weakness: bool = False,
                          scale_mismatch: bool = False,
-                         degenerate: bool = False) -> float:
+                         degenerate: bool = False,
+                         coverage_collapse: bool = False) -> float:
     """Evidence-weighted confidence.
 
         Type/Shape consistency = 0.20
@@ -467,6 +548,8 @@ def calculate_confidence(shape_match: bool, type_consistent: bool,
         score = max(0.0, score - 0.10)
     if degenerate:
         score = max(0.10, score - 0.15)  # constant/degenerate output is suspect
+    if coverage_collapse:
+        score = max(0.10, score - 0.10)  # classifier emits far fewer classes than expected
     if has_high_weakness:
         score = max(0.0, score - 0.05)
 
@@ -509,7 +592,8 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
                                 coverage_ok=coverage_ok,
                                 has_high_weakness=has_high_weakness,
                                 scale_mismatch=scale_mismatch,
-                                degenerate=degenerate)
+                                degenerate=degenerate,
+                                coverage_collapse=bool(family.get("coverage_collapse")))
 
     # Usage is best-effort: never let a failed usage fetch discard a valid
     # profile (that used to replace good agreement data with a placeholder).
@@ -555,6 +639,8 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
             "comparison_probes": n_comparison_probes,
             "edge_case_tests": len(weaknesses),
             "scale_mismatch": scale_mismatch,
+            "degenerate": degenerate,
+            "coverage_collapse": bool(family.get("coverage_collapse")),
         },
     }
 
@@ -594,6 +680,25 @@ def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str
     weaknesses = test_edge_cases(model_id, n_features, task)
     print(f"  weaknesses detected: {len(weaknesses)}")
 
+    # Degenerate/collapsed detection must use the fuller 25-sample coverage,
+    # not the 5-sample type probe (which can miss minority classes by chance).
+    expected_cls = {"mnist_digits_10class": 10,
+                    "wine_classification_3class": 3,
+                    "breast_cancer_binary": 2}.get(type_family["task"], 10) if otype.get("classification") else None
+    degenerate = False
+    coverage_collapse = False
+    if otype.get("classification") and coverage is not None:
+        distinct = coverage.get("distinct_classes", 0)
+        degenerate = distinct == 1
+        if expected_cls and distinct <= max(1, int(0.3 * expected_cls)):
+            coverage_collapse = distinct <= max(1, int(0.3 * expected_cls)) and not degenerate
+            if coverage_collapse:
+                weaknesses.append({
+                    "type": "low_class_coverage",
+                    "description": f"Only {distinct} of ~{expected_cls} classes observed (collapsed output)",
+                    "severity": "medium",
+                })
+
     # The family record carries the type-derived task + reference + consistency.
     family_record = dict(shape_family)
     family_record["task"] = type_family["task"]
@@ -601,7 +706,8 @@ def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str
     family_record["type_consistent"] = type_family["type_consistent"]
     family_record["n_features"] = n_features
     family_record["budget"] = budget
-    family_record["degenerate"] = type_family.get("degenerate", False)
+    family_record["degenerate"] = degenerate
+    family_record["coverage_collapse"] = coverage_collapse
 
     return generate_profile(model_id, pool_set, family_record, rate, n_comp,
                             weaknesses, otype=otype, coverage=coverage,
