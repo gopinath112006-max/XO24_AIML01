@@ -122,9 +122,62 @@ def get_family(n_features: int):
     return FEATURE_TO_FAMILY.get(n_features, {"task": "unknown", "reference": None})
 
 
+def rank_references(n_features: int, limit: int = 3):
+    """Candidate references ordered by feature-count distance (shape first).
+
+    The exact shape-matched family's reference is ranked first; the remaining
+    families are ranked by absolute feature-count distance. Their references
+    act as ``row[:k]`` sub-slice controls in strategy.cross_ref_screen: a
+    70-feature unknown whose real task came from a 34-feature family will agree
+    strongly with ref_03 when fed only the first 34 features.
+
+    Each entry: {reference, task, n_features, is_primary, sliceable}.
+    """
+    exact = get_family(n_features).get("reference")
+    ranked = sorted(
+        FEATURE_TO_FAMILY.items(),
+        key=lambda kv: (0 if kv[1]["reference"] == exact else 1,
+                        abs(kv[0] - n_features),
+                        kv[1]["reference"]),
+    )
+    out = []
+    for nfeat, fam in ranked[:limit]:
+        ref = fam["reference"]
+        out.append({
+            "reference": ref,
+            "task": fam["task"],
+            "n_features": nfeat,
+            "is_primary": ref == exact,
+            "sliceable": nfeat < n_features,
+        })
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Cross-reference probing strategy (strategy.py) tuning
+# ---------------------------------------------------------------------------
+# Shared-input screening trials per candidate reference.
+STRATEGY_SCREEN_TRIALS = 12
+# Diverse-input degeneracy screen (family rows + extreme rows).
+STRATEGY_DEGENERATE_SCREEN_INPUTS = 8
+# Agreements >= this (vs primary) confirm the family hypothesis.
+STRATEGY_CONFIRM_AGREEMENT = 0.80
+# Agreements below this (with no strong controls) mean "no match".
+STRATEGY_REJECT_AGREEMENT = 0.55
+# Sub-slice / control references must stay under this for a confirmation.
+STRATEGY_CONTROL_MAX = 0.55
+# Sibling (same-family unknown) agreement that corroborates an off-corpus cluster.
+STRATEGY_SIBLING_CORROBORATE = 0.70
+# Deep-trial depth to use when the screen was decisive vs. ambiguous.
+STRATEGY_DEEP_CONVERGED = 150
+STRATEGY_DEEP_AMBIGUOUS = 400
+
+
 # ---------------------------------------------------------------------------
 # Request tuning
 # ---------------------------------------------------------------------------
 REQUEST_TIMEOUT = 30  # seconds
 MAX_RETRIES = 3
 RETRY_BACKOFF = 1.0  # seconds
+# Keep this many probes untouched on the shared reference models (safety margin).
+REFERENCE_BUDGET_MARGIN = 300

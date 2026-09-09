@@ -10,6 +10,7 @@ Run:
     python profiler.py            # profile everything
     python profiler.py --quick    # few comparison trials, low probe spend (dry-run/live check)
     python profiler.py --models prac_01 prac_02   # profile only specific models
+    python profiler.py --strategy # Compare & Infer strategy (new default recommendation)
 
 Phase mapping:
   Phase 0-1: verify API access (uses starter_kit).
@@ -28,6 +29,7 @@ import time
 import config
 import starter_kit
 from starter_code_snippets import profile_one_model
+from strategy import run_strategy
 
 # ---------------------------------------------------------------------------
 # Budget-aware probe allocation
@@ -42,7 +44,7 @@ QUICK_COMPARISON_TRIALS = 10
 # model) afford hundreds of trials; cap still leaves the reference budget out.
 DEEP_COMPARISON_TRIALS = 400
 # Keep this many probes untouched on the shared reference model (safety margin).
-REFERENCE_BUDGET_MARGIN = 300
+REFERENCE_BUDGET_MARGIN = config.REFERENCE_BUDGET_MARGIN
 
 # Number of times to retry a whole model before recording a failure stub.
 PROFILER_ATTEMPTS = 3
@@ -103,10 +105,10 @@ def build_model_manifest(quick: bool):
     # Fallback to static config tables.
     for mid, spec in config.REFERENCE_MODELS.items():
         manifest.append((mid, spec["n_features"], spec["budget"], "reference", min(trials, 8)))
-    for mid, spec in config.UNKNOWN_MODELS.items():
+    for mid, uspec in config.UNKNOWN_MODELS.items():
         pool = "practice" if mid.startswith("prac") else "held_out"
         t = trials if pool == "practice" else min(trials, 8)
-        manifest.append((mid, spec["n_features"], spec["budget"], pool, t))
+        manifest.append((mid, uspec["n_features"], uspec["budget"], pool, t))
     return manifest
 
 
@@ -185,6 +187,9 @@ def main():
     parser.add_argument("--deep", action="store_true",
                         help="Deep comparison trials (~400/unknown) for stable agreement "
                              "and accuracy estimates.")
+    parser.add_argument("--strategy", action="store_true",
+                        help="Use the Cross-reference Compare & Infer strategy "
+                             "(strategy.py) instead of legacy profile_one_model.")
     parser.add_argument("--models", nargs="*", default=None,
                         help="Only profile these model ids, e.g. --models prac_01 prac_02")
     args = parser.parse_args()
@@ -211,7 +216,7 @@ def main():
             print("No matching model ids. Available:", [m[0] for m in build_model_manifest(args.quick)])
             sys.exit(1)
 
-    mode = "QUICK" if args.quick else "FULL"
+    mode = "STRATEGY" if args.strategy else ("QUICK" if args.quick else "FULL")
     print(f">>>> Profiling {len(manifest)} models in {mode} mode "
           f"(comparison trials per model)")
     print("    budget summary (probes):")
@@ -246,14 +251,21 @@ def main():
         prof = None
         for attempt in range(1, PROFILER_ATTEMPTS + 1):
             try:
-                candidate = profile_one_model(mid, nfeat, budget, pool,
-                                              n_comparison_trials=trials,
-                                              usage=usage, deep_trials=deep_trials)
-                # A successful run should yield at least one comparison probe.
-                # Zero probes means the API was unreachable for the whole model
-                # (low-level code swallows per-call errors), so treat it as a
-                # failed attempt and retry after waiting for connectivity.
+                if args.strategy:
+                    candidate = run_strategy(mid, nfeat, budget, pool,
+                                             usage=usage, deep_ok=args.deep)
+                else:
+                    candidate = profile_one_model(mid, nfeat, budget, pool,
+                                                  n_comparison_trials=trials,
+                                                  usage=usage, deep_trials=deep_trials)
+                # A successful run should yield at least one comparison probe,
+                # unless the strategy legitimately concluded there is nothing
+                # to compare (degenerate / unclassified verdicts).
                 if candidate["evidence"]["comparison_probes"] == 0:
+                    verdict = candidate.get("strategy", {}).get("verdict")
+                    if verdict in ("degenerate", "unclassified"):
+                        prof = candidate
+                        break
                     prof = None
                     raise RuntimeError("0 successful comparison probes (API unreachable?)")
                 prof = candidate
@@ -268,10 +280,14 @@ def main():
         if prof is not None:
             profiles.append(prof)
             # Live progress
+            verdict_tag = ""
+            if args.strategy:
+                vs = prof.get("strategy", {}).get("verdict", "n/a")
+                verdict_tag = f", verdict={vs}"
             print(f"    -> {mid}: {prof['inferred_task']} "
                   f"(conf {prof['task_confidence']:.2f}, "
                   f"{prof['evidence']['comparison_probes']} cmp trials, "
-                  f"{len(prof['weaknesses'])} weaknesses)")
+                  f"{len(prof['weaknesses'])} weaknesses{verdict_tag})")
         else:
             # All attempts failed; record an honest low-confidence stub.
             print(f"    !! {mid} failed after {PROFILER_ATTEMPTS} attempts "

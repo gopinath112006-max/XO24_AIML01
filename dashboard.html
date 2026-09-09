@@ -6,24 +6,24 @@
   <title>ML Model Profiling Dashboard</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --card-border: #334155;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --high: #16a34a;
-      --high-bg: #dcfce7;
-      --high-text: #14532d;
-      --medium: #d97706;
-      --medium-bg: #fef3c7;
-      --medium-text: #78350f;
-      --low: #dc2626;
-      --low-bg: #fee2e2;
-      --low-text: #7f1d1d;
-      --accent: #38bdf8;
-      --ref: #6366f1;
-      --prac: #f59e0b;
-      --held: #ec4899;
+      --bg: #FDF6EC;
+      --card: #F5EDE1;
+      --card-border: #EDE3D4;
+      --text: #36454F;
+      --muted: #7A8A8E;
+      --high: #6B2D5B;
+      --high-bg: #F0E0EA;
+      --high-text: #6B2D5B;
+      --medium: #C04000;
+      --medium-bg: #F8E8DD;
+      --medium-text: #C04000;
+      --low: #D4918B;
+      --low-bg: #F5E8E6;
+      --low-text: #8B4049;
+      --accent: #6B2D5B;
+      --ref: #6B2D5B;
+      --prac: #C04000;
+      --held: #D4918B;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -34,18 +34,18 @@
     }
     header {
       padding: 24px 32px;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
+      background: linear-gradient(135deg, #6B2D5B, #C04000);
       border-bottom: 1px solid var(--card-border);
     }
-    header h1 { font-size: 24px; margin-bottom: 4px; }
-    header p { color: var(--muted); font-size: 14px; }
+    header h1 { font-size: 24px; margin-bottom: 4px; color: #FDF6EC; }
+    header p { color: #F0E0EA; font-size: 14px; }
     .stats-bar {
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
       padding: 16px 32px;
       border-bottom: 1px solid var(--card-border);
-      background: #16213a;
+      background: var(--card);
     }
     .stat {
       background: var(--card);
@@ -74,7 +74,7 @@
       font-size: 14px;
       cursor: pointer;
     }
-    .controls button.active { background: var(--accent); color: #0f172a; font-weight: 600; border-color: var(--accent); }
+    .controls button.active { background: var(--accent); color: #FDF6EC; font-weight: 600; border-color: var(--accent); }
     .controls label { font-size: 13px; color: var(--muted); }
     main { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
     .pool-section { margin-bottom: 32px; }
@@ -117,6 +117,18 @@
       color: var(--accent);
     }
     .model-task { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .model-tag {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--card-border);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+      vertical-align: middle;
+    }
     .conf {
       padding: 5px 12px;
       border-radius: 6px;
@@ -133,7 +145,7 @@
       margin-top: 14px;
     }
     .metric {
-      background: #16213a;
+      background: var(--card-border);
       border: 1px solid var(--card-border);
       border-radius: 8px;
       padding: 10px 12px;
@@ -142,7 +154,7 @@
     .metric .m-value { font-size: 15px; font-weight: 600; margin-top: 3px; }
     .meter {
       height: 8px;
-      background: #0f172a;
+      background: var(--card-border);
       border-radius: 999px;
       overflow: hidden;
       margin-top: 6px;
@@ -161,14 +173,14 @@
       margin: 0 6px 6px 0;
     }
     .weakness.sev-high { border-left-color: var(--low); }
-    .weakness.sev-medium { border-left-color: #d97706; }
+    .weakness.sev-medium { border-left-color: #C04000; }
     .weakness.sev-low { border-left-color: var(--high); }
     .no-weakness { font-size: 12px; color: var(--muted); font-style: italic; }
     .evidence { margin-top: 12px; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--card-border); padding-top: 10px; }
     .evidence span { margin-right: 14px; }
     .warn-scalemismatch { color: var(--medium); font-weight: 600; }
     .overview {
-      background: linear-gradient(135deg, #16213a, #1e293b);
+      background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 18px 22px;
@@ -177,7 +189,7 @@
     .overview h3 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
     .overview .ov-grid { display: flex; flex-wrap: wrap; gap: 10px; }
     .ov-family {
-      background: #0f172a;
+      background: var(--card-border);
       border: 1px solid var(--card-border);
       border-radius: 8px;
       padding: 10px 14px;
@@ -187,16 +199,18 @@
     .ov-family .f-name { font-size: 12px; color: var(--muted); }
     .ov-family .f-count { font-size: 20px; font-weight: 700; margin-top: 2px; }
     .hidden { display: none; }
+    .link-accent { color: var(--accent); }
+    .sort-label { margin-left: 16px; }
     footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; border-top: 1px solid var(--card-border); }
     .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 15px; }
     .surprise-section {
-      background: linear-gradient(135deg, #16213a, #1e293b);
-      border: 1px solid #f59e0b;
+      background: var(--card);
+      border: 1px solid #6B2D5B;
       border-radius: 10px;
       padding: 20px 24px;
       margin-bottom: 28px;
     }
-    .surprise-section h3 { font-size: 18px; margin-bottom: 14px; color: #f59e0b; }
+    .surprise-section h3 { font-size: 18px; margin-bottom: 14px; color: #6B2D5B; }
     .surprise-verdict {
       display: inline-block;
       padding: 6px 16px;
@@ -214,7 +228,7 @@
       margin: 14px 0;
     }
     .surprise-metric {
-      background: #0f172a;
+      background: var(--card-border);
       border: 1px solid var(--card-border);
       border-radius: 8px;
       padding: 10px 12px;
@@ -222,27 +236,26 @@
     .surprise-metric .m-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .surprise-metric .m-value { font-size: 15px; font-weight: 600; margin-top: 3px; }
     .surprise-trigger {
-      background: #0f172a;
-      border: 1px solid #f59e0b;
+      background: var(--card-border);
+      border: 1px solid #6B2D5B;
       border-radius: 8px;
       padding: 14px 16px;
       margin-top: 14px;
       font-size: 13px;
     }
-    .surprise-trigger h5 { color: #f59e0b; margin-bottom: 8px; }
+    .surprise-trigger h5 { color: #6B2D5B; margin-bottom: 8px; }
     .surprise-trigger table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
     .surprise-trigger th, .surprise-trigger td { padding: 6px 10px; border: 1px solid var(--card-border); text-align: center; }
-    .surprise-trigger th { background: #16213a; color: var(--muted); font-size: 11px; text-transform: uppercase; }
-    .surprise-trigger td.diverge { background: #451a03; color: #fbbf24; font-weight: 600; }
+    .surprise-trigger th { background: var(--card); color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .surprise-trigger td.diverge { background: #D4918B; color: #6B2D5B; font-weight: 600; }
   </style>
 </head>
 <body>
   <header>
-    <h1>🤖 ML Model Profiling Dashboard</h1>
+    <h1> ML Model Profiling Dashboard</h1>
     <p>13 undocumented models profiled through black-box API probing
        · <span id="generatedAtLine">last updated unknown</span>
-       · <a href="https://github.com/gopinath112006-max/XO24_AIML01/blob/main/METHODOLOGY.md" target="_blank" rel="noopener" style="color:#38bdf8;">methodology</a></p>
-  </header>
+
 
   <div class="stats-bar" id="statsBar"></div>
 
@@ -252,8 +265,10 @@
     <button data-filter="reference">Reference</button>
     <button data-filter="practice">Practice</button>
     <button data-filter="held_out">Held-Out</button>
-    <label style="margin-left:16px;">Sort by:</label>
-    <select id="sortSelect">
+    <button data-filter="surprise1">Surprise 1</button>
+    <button data-filter="surprise2">Surprise 2</button>
+    <label class="sort-label">Sort by:</label>
+    <select id="sortSelect" aria-label="Sort by">
       <option value="pool">Pool (default)</option>
       <option value="confidence-desc">Confidence (high → low)</option>
       <option value="confidence-asc">Confidence (low → high)</option>
@@ -265,14 +280,30 @@
   <main id="main"></main>
 
   <footer>Evidence-backed profiling · Confidence reflects probe investment · Honest uncertainty over speculation ·
-    <a href="https://github.com/gopinath112006-max/XO24_AIML01/blob/main/METHODOLOGY.md" target="_blank" rel="noopener" style="color:var(--accent);">Read the methodology</a>
   </footer>
 
   <script>
     const POOL_ORDER = { reference: 0, practice: 1, held_out: 2 };
     const POOL_LABEL = { reference: "Reference", practice: "Practice", held_out: "Held-Out" };
+    const MODEL_DISPLAY_NAMES = {
+      ref_01: "MNIST Digits 10-Class",
+      ref_02: "Wine Classification 3-Class",
+      ref_03: "Breast Cancer Binary",
+      ref_04: "Diabetes Progression Regression",
+      prac_01: "Wine Classification 3-Class (Practice)",
+      prac_02: "Diabetes Progression Regression (Practice)",
+      prac_03: "MNIST Digits 10-Class (Practice)",
+      prac_04: "Breast Cancer Binary (Practice)",
+      held_01: "Wine Classification 3-Class (Held-Out)",
+      held_02: "MNIST Digits 10-Class (Held-Out)",
+      held_03: "Diabetes Progression Regression (Held-Out)",
+      held_04: "Breast Cancer Binary (Held-Out)",
+      held_05: "MNIST Digits 10-Class (Held-Out)",
+    };
 
     let allProfiles = [];
+    let surprise1Data = null;
+    let surprise2Data = null;
     let generatedAt = null;
 
     function loadProfiles() {
@@ -417,12 +448,12 @@
         <div class="model-card">
           <div class="top-row">
             <div>
-              <div class="model-id">${p.model_id}</div>
+              <div class="model-id">${MODEL_DISPLAY_NAMES[p.model_id] || p.model_id}<span class="model-tag">${p.model_id}</span></div>
               <div class="model-task">${(p.inferred_task || 'unknown').replace(/_/g, ' ')}</div>
             </div>
             <span class="conf ${confCls}">${Math.round(p.task_confidence * 100)}%</span>
           </div>
-          <div class="meter" style="margin-top:10px;background:#0f172a;"><div style="width:${Math.min(100, p.task_confidence * 100)}%;background:${p.task_confidence >= 0.8 ? 'var(--high)' : p.task_confidence >= 0.6 ? 'var(--medium)' : 'var(--low)'};"></div></div>
+          <div class="meter" style="margin-top:10px;background:var(--card-border);"><div style="width:${Math.min(100, p.task_confidence * 100)}%;background:${p.task_confidence >= 0.8 ? 'var(--high)' : p.task_confidence >= 0.6 ? 'var(--medium)' : 'var(--low)'};"></div></div>
           <div class="grid">
             <div class="metric">
               <div class="m-label">Performance</div>
@@ -483,6 +514,19 @@
 
     function render(profiles) {
       const active = document.querySelector('.controls button.active').dataset.filter;
+      const main = document.getElementById('main');
+
+      if (active === 'surprise1') {
+        document.getElementById('statsBar').innerHTML = '';
+        main.innerHTML = surprise1Data ? renderSurpriseChallenge(surprise1Data) : '<div class="empty-state">Surprise 1 data not available.</div>';
+        return;
+      }
+      if (active === 'surprise2') {
+        document.getElementById('statsBar').innerHTML = '';
+        main.innerHTML = surprise2Data ? renderSurpriseChallenge2(surprise2Data) : '<div class="empty-state">Surprise 2 data not available.</div>';
+        return;
+      }
+
       let filtered = profiles;
       if (active !== 'all') {
         filtered = profiles.filter(p => p.pool_set === active);
@@ -504,7 +548,6 @@
           );
       }
 
-      const main = document.getElementById('main');
       if (sorted.length === 0) {
         main.innerHTML = '<div class="empty-state">No models in this pool yet.</div>';
         return;
@@ -532,7 +575,10 @@
         }
         if (currentPool !== null) html += '</div>';
         if (active === 'all') {
-          html = renderOverview(sorted) + html;
+          let surpriseHtml = '';
+          if (surprise1Data) surpriseHtml += renderSurpriseChallenge(surprise1Data);
+          if (surprise2Data) surpriseHtml += renderSurpriseChallenge2(surprise2Data);
+          html = surpriseHtml + renderOverview(sorted) + html;
         }
         main.innerHTML = html;
       } else {
@@ -624,8 +670,8 @@
       const arrowColor = dropped ? 'var(--low)' : 'var(--high)';
 
       return `
-        <div class="surprise-section" style="border-color:#8b5cf6;">
-          <h3 style="color:#8b5cf6;">Surprise Challenge 2 — Confidence Should Match Evidence</h3>
+        <div class="surprise-section" style="border-color:#D4918B;">
+          <h3 style="color:#D4918B;">Surprise Challenge 2 — Confidence Should Match Evidence</h3>
           <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">
             Model: <code style="color:var(--accent)">${data.model_id || 'prac_01'}</code> ·
             Task: ${data.model_task || 'unknown'} (${data.model_features} features)
@@ -634,9 +680,9 @@
             "${data.key_principle || 'Confidence should match the amount of evidence available.'}"
           </div>
           <div class="surprise-grid" style="grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;">
-            <div class="surprise-metric" style="border-color:#8b5cf6;">
+            <div class="surprise-metric" style="border-color:#D4918B;">
               <div class="m-label">Before Cut</div>
-              <div class="m-value" style="color:#8b5cf6;">${bc.confidence != null ? (bc.confidence * 100).toFixed(1) + '%' : '—'}</div>
+              <div class="m-value" style="color:#D4918B;">${bc.confidence != null ? (bc.confidence * 100).toFixed(1) + '%' : '—'}</div>
               <div style="font-size:11px;color:var(--muted);margin-top:4px;">
                 ${bc.probes_used ?? '—'} probes · agreement ${bc.agreement != null ? (bc.agreement * 100).toFixed(1) + '%' : '—'}
               </div>
@@ -645,9 +691,9 @@
               <div style="font-size:28px;color:${arrowColor};font-weight:700;">${arrow}</div>
               <div style="font-size:12px;color:var(--muted);">−${(cc.drop_pct ?? 0).toFixed(1)}%</div>
             </div>
-            <div class="surprise-metric" style="border-color:#8b5cf6;">
+            <div class="surprise-metric" style="border-color:#D4918B;">
               <div class="m-label">After Cut</div>
-              <div class="m-value" style="color:#8b5cf6;">${ac.confidence != null ? (ac.confidence * 100).toFixed(1) + '%' : '—'}</div>
+              <div class="m-value" style="color:#D4918B;">${ac.confidence != null ? (ac.confidence * 100).toFixed(1) + '%' : '—'}</div>
               <div style="font-size:11px;color:var(--muted);margin-top:4px;">
                 ${ac.probes_used ?? '—'} probes · agreement ${ac.agreement != null ? (ac.agreement * 100).toFixed(1) + '%' : '—'}
               </div>
@@ -677,20 +723,15 @@
         fetch('surprise1_answer.json').then(r => r.ok ? r.json() : null).catch(() => null),
         fetch('surprise2_answer.json').then(r => r.ok ? r.json() : null).catch(() => null)
       ])
-        .then(([profiles, surprise1, surprise2]) => {
+        .then(([profiles, s1, s2]) => {
           allProfiles = profiles;
+          surprise1Data = s1;
+          surprise2Data = s2;
           if (generatedAt) {
             const el = document.getElementById('generatedAtLine');
             el.textContent = 'last updated ' + generatedAt.replace('T', ' ').replace('Z', ' UTC');
           }
           render(profiles);
-          const mainEl = document.getElementById('main');
-          if (surprise1) {
-            mainEl.insertAdjacentHTML('afterbegin', renderSurpriseChallenge(surprise1));
-          }
-          if (surprise2) {
-            mainEl.insertAdjacentHTML('afterbegin', renderSurpriseChallenge2(surprise2));
-          }
         })
         .catch(err => {
           document.getElementById('main').innerHTML =
