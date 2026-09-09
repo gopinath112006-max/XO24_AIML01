@@ -161,7 +161,7 @@ class TestConfidenceScoring(unittest.TestCase):
     def test_perfect_evidence(self):
         conf = calculate_confidence(
             shape_match=True, type_consistent=True,
-            agreement_rate=0.95, n_comparison_probes=30,
+            agreement_rate=0.95, n_comparison_probes=200,
             n_features=17, coverage_ok=True,
         )
         self.assertGreaterEqual(conf, 0.85)

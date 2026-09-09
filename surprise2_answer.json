@@ -20,7 +20,7 @@
   "after_cut": {
     "probes_used": 5,
     "agreement": 0.575,
-    "confidence": 0.325,
+    "confidence": 0.304,
     "inferred_task": "wine_classification_3class",
     "est_accuracy": {
       "best": 0.575,
@@ -32,18 +32,18 @@
   },
   "confidence_change": {
     "before": 0.45,
-    "after": 0.325,
-    "drop": 0.125,
-    "drop_pct": 12.5,
+    "after": 0.304,
+    "drop": 0.146,
+    "drop_pct": 14.6,
     "decreased": true
   },
   "key_principle": "Confidence should match the amount of evidence available.",
-  "explanation": "With 400 probes, the system has strong evidence: agreement rate 57.5% over 400 comparison rows, full probe investment bonus, and stable agreement across halves. With only 5 probes, the probe investment term drops from 15% to 2.5%, and the agreement estimate is based on far fewer samples \u2014 so confidence decreases from 45.0% to 32.5%.",
+  "explanation": "With 400 probes, the system has strong evidence: agreement rate 57.5% over 400 comparison rows, full probe investment bonus, and stable agreement across halves. With only 5 probes, the probe investment term drops from 15% to 0.4%, and the agreement estimate is based on far fewer samples \u2014 so confidence decreases from 45.0% to 30.4%.",
   "methodology": [
     "Step 1: Load the existing profile for prac_01 (profiled with 400 probes).",
     "Step 2: Recalculate confidence with full probe count (400).",
     "Step 3: Recalculate confidence with severely reduced probe count (5).",
     "Step 4: Compare confidence before and after the cut.",
-    "Step 5: Confidence drops from 0.450 to 0.325 \u2014 the system honestly communicates reduced certainty."
+    "Step 5: Confidence drops from 0.450 to 0.304 \u2014 the system honestly communicates reduced certainty."
   ]
 }

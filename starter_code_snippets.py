@@ -691,7 +691,7 @@ def calculate_confidence(shape_match: bool, type_consistent: bool,
         elif agreement_rate > 0.70:
             score += 0.25
 
-    score += 0.15 * min(1.0, n_comparison_probes / 30.0)
+    score += 0.15 * min(1.0, n_comparison_probes / 200.0)
 
     # Honest penalties for detected problems.
     if scale_mismatch:

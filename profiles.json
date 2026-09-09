@@ -1788,7 +1788,13 @@
           4
         ]
       },
-      "weaknesses": [],
+      "weaknesses": [
+        {
+          "type": "degenerate_output",
+          "description": "Model only outputs class 4 for all inputs (constant classifier; emits class 4 even for extreme inputs (all-zeros, all-max, ramp, reverse-ramp))",
+          "severity": "high"
+        }
+      ],
       "probe_utilization": {
         "budget": 10000,
         "used": 3032,

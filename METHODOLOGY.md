@@ -70,7 +70,7 @@ Confidence =
    0.20  Type/Shape consistency   (output type matches shape family)
   +0.10  Class-coverage bonus     (classifier emits a plausible spread of classes)
   +0.45  Agreement vs reference   (>0.90 → 0.45, >0.80 → 0.36, >0.70 → 0.25)
-  +0.15  Probe investment         (0.15 × min(1, comparison_probes / 30))
+  +0.15  Probe investment         (0.15 × min(1, comparison_probes / 200))
 
 Penalties:
   −0.10 if regression scale mismatch detected

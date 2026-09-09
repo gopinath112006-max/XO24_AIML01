@@ -148,7 +148,7 @@ def run_surprise_challenge_2():
             f"agreement rate {profile.get('agreement_with_reference', 0):.1%} over "
             f"{PROBES_BEFORE} comparison rows, full probe investment bonus, and "
             f"stable agreement across halves. With only {PROBES_AFTER} probes, the "
-            f"probe investment term drops from 15% to {0.15 * min(1, PROBES_AFTER / 30):.1%}, "
+            f"probe investment term drops from 15% to {0.15 * min(1, PROBES_AFTER / 200):.1%}, "
             f"and the agreement estimate is based on far fewer samples — so confidence "
             f"decreases from {conf_before:.1%} to {conf_after:.1%}."
         ),

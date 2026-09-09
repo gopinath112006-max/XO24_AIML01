@@ -388,7 +388,7 @@
         else if (a > 0.80) add.push('+0.36 agreement');
         else if (a > 0.70) add.push('+0.25 agreement');
       }
-      add.push(`+${(0.15 * Math.min(1, (ev.comparison_probes || 0) / 30)).toFixed(2)} probes`);
+      add.push(`+${(0.15 * Math.min(1, (ev.comparison_probes || 0) / 200)).toFixed(2)} probes`);
       if (ev.scale_mismatch) sub.push('−0.10 scale mismatch');
       if (ev.degenerate) sub.push('−0.15 degenerate');
       if (ev.coverage_collapse) sub.push('−0.10 collapsed coverage');
@@ -396,7 +396,7 @@
       let s = ev.shape_match && ev.type_consistent !== false ? 0.20 : (ev.shape_match && ev.type_consistent === null ? 0.10 : 0);
       if (covOk) s += 0.10;
       if (a != null) { if (a > 0.90) s += 0.45; else if (a > 0.80) s += 0.36; else if (a > 0.70) s += 0.25; }
-      s += 0.15 * Math.min(1, (ev.comparison_probes || 0) / 30);
+      s += 0.15 * Math.min(1, (ev.comparison_probes || 0) / 200);
       if (ev.scale_mismatch) s = Math.max(0, s - 0.10);
       if (ev.degenerate) s = Math.max(0.10, s - 0.15);
       if (ev.coverage_collapse) s = Math.max(0.10, s - 0.10);

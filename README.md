@@ -26,8 +26,8 @@ You're given access to 13 machine learning models through a simple REST API. You
 | Pool | Count | Models | Budget | Known? |
 |------|-------|--------|--------|--------|
 | Reference | 4 | ref_01 to ref_04 | 10,000 probes each | ✅ Documented |
-| Practice | 5 | prac_01 to prac_05 | 10,000 probes each | ❌ Unknown |
-| Held-Out | 4 | held_01 to held_04 | 10,000 probes each | ❌ Unknown |
+| Practice | 4 | prac_01 to prac_04 | 10,000 probes each | ❌ Unknown |
+| Held-Out | 5 | held_01 to held_05 | 10,000 probes each | ❌ Unknown |
 
 > Budget note: the live API reports `probe_budget: 10000` for every model (the
 > figures in the challenge docs — 500 practice / 150 held-out — are examples,
@@ -280,20 +280,30 @@ profile = profile_one_model("prac_01", n_features=17, budget=500)
 Every confidence score must be honest and evidence-backed.
 
 ```
-Confidence = (Shape Match) + (Agreement Evidence) + (Probe Investment)
+Confidence = (Type/Shape) + (Coverage) + (Agreement) + (Probe Investment) − (Penalties)
 
 where:
-  Shape Match        = 0.25 (if features match reference)
-  Agreement          = 0.50 if agreement > 95%
-                     = 0.40 if agreement 85-95%
-                     = 0.25 if agreement 70-85%
-  Probe Investment   = 0.15 × min(1.0, probes_on_task / 30)
+  Type/Shape        = 0.20 (output type matches shape family)
+  Coverage          = 0.10 (classifier emits a plausible spread of classes)
+  Agreement         = 0.45 if agreement > 90%
+                    = 0.36 if agreement 80-90%
+                    = 0.25 if agreement 70-80%
+  Probe Investment  = 0.15 × min(1.0, comparison_probes / 30)
+
+Penalties:
+  −0.10 if regression scale mismatch detected
+  −0.15 if degenerate output (only one class ever observed)
+  −0.10 if collapsed class coverage (far fewer classes than expected)
+  −0.05 if any high-severity weakness
+
+Cap: 0.99 — we never claim 100% certainty.
 
 Example:
-  - Shape matches ref_02:       +0.25
-  - 92% agreement with ref_02:  +0.40
-  - 15 comparison probes:       +0.075
-  = 0.725 → Display as 72% confidence
+  - Type/Shape matches ref_02:      +0.20
+  - Coverage OK (3/3 classes seen): +0.10
+  - 92% agreement with ref_02:      +0.45
+  - 15 comparison probes:           +0.075
+  = 0.825 → Display as 83% confidence
 ```
 
 **Rule: Never claim 100% confidence. Always leave room for uncertainty.**
@@ -303,11 +313,13 @@ Implemented in `starter_code_snippets.py`:
 ```python
 confidence = calculate_confidence(
     shape_match=True,
+    type_consistent=True,
     agreement_rate=0.92,
     n_comparison_probes=15,
-    task_name="wine_classification"
+    n_features=17,
+    coverage_ok=True,
 )
-# Returns: 0.725
+# Returns: ~0.825
 ```
 
 ---
