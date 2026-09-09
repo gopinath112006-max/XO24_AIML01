@@ -1,0 +1,456 @@
+{
+  "pool": "https://hackathon-surprise1-pool.onrender.com",
+  "model_a": "s1_model_a",
+  "model_b": "s1_model_b",
+  "n_features": 34,
+  "center": 10.0,
+  "n_probes_per_model": 10,
+  "estimated_total_probes_per_model": 196,
+  "boundaries": {
+    "A_first_class0_at_f0": 37,
+    "B_first_class0_at_f0": 42.0
+  },
+  "divergence_band_f0": {
+    "min": 37,
+    "max": 41
+  },
+  "finding": "The models diverge exactly when feature 0 lands in the band f0 in [37, 41] with all other features pinned at 10: model A already predicts class 0 while model B still predicts class 1 (A's class-0 boundary is at f0=37, B's is at f0=42).",
+  "A_sweep": [
+    {
+      "f0": -20,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": -10,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": -5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 0,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 10,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 15,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 20,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 25,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 30,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 35,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 36.0,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 36.5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 37,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 37.5,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 38.0,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 39,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 40,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 41,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 42.0,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 42.5,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 43,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 45,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 50,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 60,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 80,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 100,
+      "label": 0,
+      "probs": null
+    }
+  ],
+  "B_sweep": [
+    {
+      "f0": -20,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": -10,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": -5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 0,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 10,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 15,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 20,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 25,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 30,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 35,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 36.0,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 36.5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 37,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 37.5,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 38.0,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 39,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 40,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 41,
+      "label": 1,
+      "probs": null
+    },
+    {
+      "f0": 42.0,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 42.5,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 43,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 45,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 50,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 60,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 80,
+      "label": 0,
+      "probs": null
+    },
+    {
+      "f0": 100,
+      "label": 0,
+      "probs": null
+    }
+  ],
+  "A_targeted": [
+    {
+      "f0": 36.0,
+      "label": 1,
+      "probs": [
+        0.3793932725005338,
+        0.6206067274994662
+      ]
+    },
+    {
+      "f0": 36.5,
+      "label": 1,
+      "probs": [
+        0.4398487363124528,
+        0.5601512636875472
+      ]
+    },
+    {
+      "f0": 37.0,
+      "label": 0,
+      "probs": [
+        0.5021430664516962,
+        0.4978569335483038
+      ]
+    },
+    {
+      "f0": 37.5,
+      "label": 0,
+      "probs": [
+        0.5643709355631865,
+        0.43562906443681343
+      ]
+    },
+    {
+      "f0": 38.0,
+      "label": 0,
+      "probs": [
+        0.6246350727436567,
+        0.37536492725634335
+      ]
+    },
+    {
+      "f0": 40.0,
+      "label": 0,
+      "probs": [
+        0.8191593054255739,
+        0.1808406945744261
+      ]
+    },
+    {
+      "f0": 41.0,
+      "label": 0,
+      "probs": [
+        0.8819845154676419,
+        0.11801548453235806
+      ]
+    },
+    {
+      "f0": 42.0,
+      "label": 0,
+      "probs": [
+        0.9249826280516383,
+        0.07501737194836167
+      ]
+    },
+    {
+      "f0": 42.5,
+      "label": 0,
+      "probs": [
+        0.9406100445676437,
+        0.059389955432356215
+      ]
+    },
+    {
+      "f0": 43.0,
+      "label": 0,
+      "probs": [
+        0.9531468985650141,
+        0.046853101434985896
+      ]
+    }
+  ],
+  "B_targeted": [
+    {
+      "f0": 36.0,
+      "label": 1,
+      "probs": [
+        0.0526446018345339,
+        0.9473553981654661
+      ]
+    },
+    {
+      "f0": 36.5,
+      "label": 1,
+      "probs": [
+        0.06662281433357964,
+        0.9333771856664204
+      ]
+    },
+    {
+      "f0": 37.0,
+      "label": 1,
+      "probs": [
+        0.0839835003565641,
+        0.9160164996434359
+      ]
+    },
+    {
+      "f0": 37.5,
+      "label": 1,
+      "probs": [
+        0.10535741881982363,
+        0.8946425811801764
+      ]
+    },
+    {
+      "f0": 38.0,
+      "label": 1,
+      "probs": [
+        0.1313907756445737,
+        0.8686092243554263
+      ]
+    },
+    {
+      "f0": 40.0,
+      "label": 1,
+      "probs": [
+        0.2916623133755163,
+        0.7083376866244837
+      ]
+    },
+    {
+      "f0": 41.0,
+      "label": 1,
+      "probs": [
+        0.40452938068193967,
+        0.5954706193180603
+      ]
+    },
+    {
+      "f0": 42.0,
+      "label": 0,
+      "probs": [
+        0.5284863446445283,
+        0.4715136553554717
+      ]
+    },
+    {
+      "f0": 42.5,
+      "label": 0,
+      "probs": [
+        0.5901092906284467,
+        0.40989070937155325
+      ]
+    },
+    {
+      "f0": 43.0,
+      "label": 0,
+      "probs": [
+        0.6490271066413709,
+        0.35097289335862913
+      ]
+    }
+  ]
+}

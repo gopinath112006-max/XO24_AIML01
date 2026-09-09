@@ -24,9 +24,9 @@ import config
 # ---------------------------------------------------------------------------
 
 
-def api_get(path: str):
-    """Generic GET helper with retries."""
-    url = config.GENERAL_POOL_URL + path
+def api_get(path: str, base_url: str = None):
+    """Generic GET helper with retries. base_url defaults to the general pool."""
+    url = (base_url or config.GENERAL_POOL_URL) + path
     last_exc = None
     for _ in range(config.MAX_RETRIES):
         try:
@@ -38,9 +38,9 @@ def api_get(path: str):
     raise RuntimeError(f"GET {url} failed after {config.MAX_RETRIES} attempts: {last_exc}")
 
 
-def api_post(path: str, body: dict):
-    """Generic POST helper with retries."""
-    url = config.GENERAL_POOL_URL + path
+def api_post(path: str, body: dict, base_url: str = None):
+    """Generic POST helper with retries. base_url defaults to the general pool."""
+    url = (base_url or config.GENERAL_POOL_URL) + path
     last_exc = None
     for _ in range(config.MAX_RETRIES):
         try:
@@ -53,24 +53,24 @@ def api_post(path: str, body: dict):
 
 
 # ---------------------------------------------------------------------------
-# 2. The three endpoints
+# 2. The three endpoints (pool-aware: pass base_url to target another pool)
 # ---------------------------------------------------------------------------
 
 
-def list_models():
+def list_models(base_url: str = None):
     """GET /models — Free. Returns all available models + feature counts."""
-    return api_get("/models")
+    return api_get("/models", base_url=base_url)
 
 
-def predict(model_id: str, inputs: list):
+def predict(model_id: str, inputs: list, base_url: str = None):
     """POST /model/{model_id}/predict — Costs 1 probe per input row."""
     body = {"team_id": config.TEAM_ID, "inputs": inputs}
-    return api_post(f"/model/{model_id}/predict", body)
+    return api_post(f"/model/{model_id}/predict", body, base_url=base_url)
 
 
-def get_usage():
+def get_usage(base_url: str = None):
     """GET /team/{team_id}/usage — Free. Returns per-model probe usage."""
-    return api_get(f"/team/{config.TEAM_ID}/usage")
+    return api_get(f"/team/{config.TEAM_ID}/usage", base_url=base_url)
 
 
 # ---------------------------------------------------------------------------

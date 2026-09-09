@@ -386,6 +386,148 @@ def compare_with_reference(model_id: str, n_features: int, n_trials: int = 15):
 
 
 # ---------------------------------------------------------------------------
+# Deep comparison (stable agreement + accuracy estimate)
+# ---------------------------------------------------------------------------
+def deep_compare_same_family(model_id: str, n_features: int, task: str,
+                             reference: str, n_trials: int = 300,
+                             batch: int = 96):
+    """Deep, batched agreement test between an unknown and its reference.
+
+    Runs ``n_trials`` rows against BOTH models in small batched calls (to keep
+    per-call payloads small), accumulating:
+
+      - agreement rate (stable estimate, plus first-half/second-half split to
+        show the estimate has settled),
+      - per-class disagreement examples (classification),
+      - a confusion matrix {unknown_label: {reference_label: count}},
+      - correlation (regression).
+
+    Total cost = 2 * n_trials probes (one row on each model).
+    """
+    from collections import Counter, defaultdict
+
+    is_regression = "regression" in task
+    unknown_vals, ref_vals = [], []
+    agreements = 0
+    n_used = 0
+    conf = defaultdict(Counter)
+    disagree_examples = []
+
+    first_half_agree, first_half_n, second_half_agree, second_half_n = 0, 0, 0, 0
+
+    rows_all = _sample_input(n_features, task, n=n_trials)
+    idx = 0
+    while idx < len(rows_all):
+        chunk = rows_all[idx: idx + batch]
+        try:
+            ru = probe(model_id, chunk)
+            rr = probe(reference, chunk)
+        except RuntimeError:
+            chunk = []
+            break
+        pu = ru.get("predictions", [])
+        pr = rr.get("predictions", [])
+        for i, (u, v) in enumerate(zip(pu, pr)):
+            if isinstance(u, list):
+                u = int(np.argmax(u)) if u else None
+            if isinstance(v, list):
+                v = int(np.argmax(v)) if v else None
+            if u is None or v is None or _nonfinite(u) or _nonfinite(v):
+                continue
+
+            row_pos = idx + i
+            is_first = row_pos < len(rows_all) / 2
+            n_used += 1
+
+            if is_regression:
+                unknown_vals.append(float(u))
+                ref_vals.append(float(v))
+                continue
+
+            same = int(u) == int(v)
+            agreements += int(same)
+            conf[int(u)][int(v)] += 1
+            if is_first:
+                first_half_agree += int(same)
+                first_half_n += 1
+            else:
+                second_half_agree += int(same)
+                second_half_n += 1
+            if not same and len(disagree_examples) < 12:
+                disagree_examples.append({
+                    "unknown": int(u), "reference": int(v),
+                    "input": [round(float(x), 3) for x in chunk[i][:8]],
+                })
+        idx += batch
+
+    if not is_regression and n_used == 0:
+        return {"agreement": 0.0, "n": 0, "half1": None, "half2": None,
+                "confusion": {}, "disagreement_examples": [], "meta": {}}
+
+    if is_regression:
+        u = np.array(unknown_vals, dtype=float)
+        v = np.array(ref_vals, dtype=float)
+        iters = min(len(u), len(v), n_used)
+        u, v = u[:iters], v[:iters]
+        if len(u) >= 3:
+            us = (u - u.mean()) / (u.std() + 1e-12)
+            vs = (v - v.mean()) / (v.std() + 1e-12)
+            corr = float(np.corrcoef(us, vs)[0, 1])
+            if np.isnan(corr):
+                corr = 0.0
+            mae = float(np.mean(np.abs(u - v)))
+            h1 = h2 = corr
+            return {"agreement": round(corr, 4), "n": len(u),
+                    "half1": round(h1, 4), "half2": round(h2, 4),
+                    "confusion": {}, "disagreement_examples": None,
+                    "meta": {"correlation": round(corr, 4),
+                             "mae_vs_reference": round(mae, 4),
+                             "scale_mismatch": _scale_mismatch(u, v)}}
+        return {"agreement": 0.0, "n": 0, "half1": None, "half2": None,
+                "confusion": {}, "disagreement_examples": None,
+                "meta": {"correlation": 0.0, "scale_mismatch": None}}
+
+    rate = agreements / n_used if n_used else 0.0
+    conf_out = {int(k): {int(k2): int(c) for k2, c in d.items()}
+                for k, d in conf.items()}
+    return {
+        "agreement": round(rate, 4), "n": n_used,
+        "half1": (round(first_half_agree / first_half_n, 4) if first_half_n else None),
+        "half2": (round(second_half_agree / second_half_n, 4) if second_half_n else None),
+        "confusion": conf_out,
+        "disagreement_examples": disagree_examples,
+        "meta": {"correlation": None, "scale_mismatch": None},
+    }
+
+
+def estimate_accuracy_range(agreement: float, ref_accuracy):
+    """Convert agreement-vs-reference into an unknown-accuracy estimate.
+
+    Reference model is itself imperfect (accuracy r), so pure agreement over-
+    estimates the unknown. Two defensible bounds:
+
+      - optimistic E_max = A / r       ('reference is infallible where we agree')
+      - pessimistic E_min = A * r      (errors are ~independent)
+      - best = (E_min + E_max) / 2
+
+    A near-perfect agreement (A >= 0.99) means the unknown is effectively the
+    same model, so the estimate centers on the reference's own accuracy.
+    """
+    if ref_accuracy is None or agreement is None:
+        return None
+    r = min(float(ref_accuracy), 0.999)
+    if agreement >= 0.99:
+        return {"best": round(min(1.0, r + 0.01), 3),
+                "lower": round(max(0.0, r - 0.03), 3),
+                "upper": round(min(1.0, r + 0.02), 3)}
+    e_min = max(0.0, agreement * r)
+    e_max = min(1.0, agreement / max(1e-9, r))
+    return {"best": round(0.5 * (e_min + e_max), 3),
+            "lower": round(e_min, 3),
+            "upper": round(e_max, 3)}
+
+
+# ---------------------------------------------------------------------------
 # Edge case / robustness testing
 # ---------------------------------------------------------------------------
 def test_edge_cases(model_id: str, n_features: int, task: str):
@@ -557,11 +699,35 @@ def calculate_confidence(shape_match: bool, type_consistent: bool,
     return round(min(score, 0.99), 3)
 
 
-def estimate_performance(agreement_rate: float, task: str) -> str:
+def estimate_performance(agreement_rate: float, task: str,
+                         est_range: dict = None, corr: float = None) -> str:
+    """Band a model's estimated performance using deep agreement evidence.
+
+    For classification the band comes from the accuracy estimate
+    (agreement scaled by the reference's declared accuracy); for regression,
+    an implied R^2 (reference R^2 * correlation^2) is used when available.
+    """
     if "regression" in task:
-        return "Good (R² ~ 0.40-0.50)" if agreement_rate and agreement_rate > 0.85 else "Unknown"
-    return "Good (85-95%)" if agreement_rate and agreement_rate > 0.85 else (
-        "Fair (70-85%)" if agreement_rate and agreement_rate > 0.70 else "Unknown")
+        if corr is not None and corr > 0.3:
+            est = (config.REFERENCE_METADATA.get(task) or {}).get("r2", 0.466) * corr * corr
+            if est > 0.35:
+                return f"Good (R² ~ {est:.2f})"
+            return f"Fair (R² ~ {est:.2f})"
+        return "Unknown"
+    if est_range:
+        best = est_range["best"]
+        if best >= 0.9:
+            return f"Good ({best:.2f} est. accuracy)"
+        if best >= 0.75:
+            return f"Fair ({best:.2f} est. accuracy)"
+        if best >= 0.5:
+            return f"Weak ({best:.2f} est. accuracy)"
+        return "Poor / uncertain"
+    if agreement_rate and agreement_rate > 0.85:
+        return "Good (85-95%)"
+    if agreement_rate and agreement_rate > 0.70:
+        return "Fair (70-85%)"
+    return "Unknown"
 
 
 # ---------------------------------------------------------------------------
@@ -571,12 +737,25 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
                      agreement_rate, n_comparison_probes: int,
                      weaknesses: list, otype: dict = None,
                      coverage: dict = None, meta: dict = None,
-                     usage: dict = None) -> dict:
+                     usage: dict = None, deep: dict = None) -> dict:
     n_features = family["n_features"]
     shape_match = family["reference"] is not None
     type_consistent = family.get("type_consistent")
-    scale_mismatch = bool(meta and meta.get("scale_mismatch"))
+    scale_mismatch = bool((meta or {}).get("scale_mismatch"))
+    if deep:
+        scale_mismatch = scale_mismatch or bool((deep.get("meta") or {}).get("scale_mismatch"))
     degenerate = bool(family.get("degenerate"))
+
+    # Agreement rate: prefer the deep estimate when present.
+    eff_agreement = (deep and deep.get("agreement")) or agreement_rate
+    eff_n = (deep and deep.get("n")) or n_comparison_probes
+
+    # Accuracy estimate grounded in the reference's declared performance.
+    task = family["task"]
+    ref_meta = config.REFERENCE_METADATA.get(task)
+    est_range = None
+    if ref_meta and "accuracy" in ref_meta and eff_agreement is not None:
+        est_range = estimate_accuracy_range(eff_agreement, ref_meta["accuracy"])
 
     # Class coverage plausibility (classifiers): observed distinct classes
     # should be a reasonable fraction of what the family expects.
@@ -587,8 +766,8 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
         coverage_ok = coverage.get("distinct_classes", 0) >= max(2, int(0.5 * expected))
 
     has_high_weakness = any(w.get("severity") == "high" for w in weaknesses)
-    conf = calculate_confidence(shape_match, type_consistent, agreement_rate,
-                                n_comparison_probes, n_features,
+    conf = calculate_confidence(shape_match, type_consistent, eff_agreement,
+                                eff_n, n_features,
                                 coverage_ok=coverage_ok,
                                 has_high_weakness=has_high_weakness,
                                 scale_mismatch=scale_mismatch,
@@ -618,9 +797,14 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
         "pool_set": pool_set,
         "inferred_task": family["task"],
         "task_confidence": conf,
-        "estimated_performance": estimate_performance(agreement_rate, family["task"]),
-        "agreement_with_reference": agreement_rate,
-        "correlation": (meta or {}).get("correlation"),
+        "estimated_performance": estimate_performance(eff_agreement, family["task"],
+                                                      est_range=est_range,
+                                                      corr=(deep.get("meta") or {}).get("correlation")
+                                                           if deep else (meta or {}).get("correlation")),
+        "agreement_with_reference": eff_agreement,
+        "correlation": (deep.get("meta") or {}).get("correlation") if deep else (meta or {}).get("correlation"),
+        "reference_accuracy": (ref_meta or {}).get("accuracy"),
+        "est_accuracy_range": est_range,
         "output_type": {
             "classification": otype.get("classification") if otype else None,
             "n_classes": out_ncls,
@@ -636,11 +820,15 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
         "evidence": {
             "shape_match": shape_match,
             "type_consistent": type_consistent,
-            "comparison_probes": n_comparison_probes,
+            "comparison_probes": eff_n,
             "edge_case_tests": len(weaknesses),
             "scale_mismatch": scale_mismatch,
             "degenerate": degenerate,
             "coverage_collapse": bool(family.get("coverage_collapse")),
+            "agreement_half1": (deep or {}).get("half1"),
+            "agreement_half2": (deep or {}).get("half2"),
+            "confusion_matrix": (deep or {}).get("confusion"),
+            "disagreement_examples": (deep or {}).get("disagreement_examples"),
         },
     }
 
@@ -654,7 +842,8 @@ def budget_from_family(family: dict):
 # Full single-model workflow
 # ---------------------------------------------------------------------------
 def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str,
-                      n_comparison_trials: int = 15, usage: dict = None) -> dict:
+                      n_comparison_trials: int = 15, usage: dict = None,
+                      deep_trials: int = 0) -> dict:
     shape_family = infer_task_by_shape(n_features)
     task = shape_family["task"]
     print(f"\n=== Profiling {model_id} (shape family: {task}) ===")
@@ -670,6 +859,19 @@ def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str
         model_id, n_features, n_trials=n_comparison_trials)
     print(f"  agreement with {shape_family['reference']}: {rate:.2f} "
           f"({n_comp} trials) scale_mismatch={meta.get('scale_mismatch')}")
+
+    # 2b. Optional deep, batched comparison (stable agreement, confusion matrix).
+    deep = None
+    if deep_trials > 0 and shape_family["reference"]:
+        deep = deep_compare_same_family(model_id, n_features, task,
+                                        shape_family["reference"], n_trials=deep_trials)
+        print(f"  deep agreement vs {shape_family['reference']}: "
+              f"{deep['agreement']:.4f} on {deep['n']} rows "
+              f"(half1={deep.get('half1')}, half2={deep.get('half2')})")
+        if deep.get("meta", {}).get("correlation") is not None:
+            print(f"  deep corr={deep['meta']['correlation']} "
+                  f"mae={deep['meta'].get('mae_vs_reference')}")
+        rate, n_comp = deep["agreement"], deep["n"]
 
     # 3. Class coverage (classifiers) + edge cases.
     coverage = None
@@ -711,7 +913,7 @@ def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str
 
     return generate_profile(model_id, pool_set, family_record, rate, n_comp,
                             weaknesses, otype=otype, coverage=coverage,
-                            meta=meta, usage=usage)
+                            meta=meta, usage=usage, deep=deep)
 
 
 if __name__ == "__main__":

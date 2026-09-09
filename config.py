@@ -25,6 +25,13 @@ else:
     API_KEY = os.environ.get("HACKATHON_API_KEY", "your_api_key")
 
 GENERAL_POOL_URL = "https://hackathon-general-pool.onrender.com"
+SURPRISE1_POOL_URL = "https://hackathon-surprise1-pool.onrender.com"
+
+# Named pools so tooling can select a base url without hardcoding strings.
+POOL_URLS = {
+    "general": GENERAL_POOL_URL,
+    "surprise1": SURPRISE1_POOL_URL,
+}
 
 # Header used for auth on every request that costs probes.
 AUTH_HEADERS = {"x-team-key": API_KEY}
@@ -61,6 +68,27 @@ FEATURE_TO_FAMILY = {
     17: {"task": "wine_classification_3class", "reference": "ref_02"},
     34: {"task": "breast_cancer_binary", "reference": "ref_03"},
     14: {"task": "diabetes_progression_regression", "reference": "ref_04"},
+}
+
+# Declared performance of each reference model (from general_reference_docs.md).
+# Used to convert an unknown's agreement-vs-reference into an accuracy estimate.
+REFERENCE_METADATA = {
+    "mnist_digits_10class": {
+        "reference": "ref_01", "n_classes": 10,
+        "accuracy": 0.957, "metric": "accuracy", "metric_value": 0.957,
+    },
+    "wine_classification_3class": {
+        "reference": "ref_02", "n_classes": 3,
+        "accuracy": 0.963, "metric": "accuracy", "metric_value": 0.963,
+    },
+    "breast_cancer_binary": {
+        "reference": "ref_03", "n_classes": 2,
+        "accuracy": 0.977, "metric": "accuracy", "metric_value": 0.977,
+    },
+    "diabetes_progression_regression": {
+        "reference": "ref_04", "r2": 0.466, "mae": 43.13,
+        "metric": "r2", "metric_value": 0.466,
+    },
 }
 
 

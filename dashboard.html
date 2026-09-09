@@ -295,6 +295,18 @@
       if (p.correlation !== undefined && p.correlation !== null) {
         parts.push(`<span>📈 corr=${p.correlation}</span>`);
       }
+      if (p.reference_accuracy != null) {
+        parts.push(`<span>🎯 Ref accuracy: ${(p.reference_accuracy * 100).toFixed(0)}%</span>`);
+      }
+      if (p.est_accuracy_range) {
+        parts.push(`<span>🎯 Est. acc: ${(p.est_accuracy_range.best * 100).toFixed(0)}% [${(p.est_accuracy_range.lower * 100).toFixed(0)}–${(p.est_accuracy_range.upper * 100).toFixed(0)}%]</span>`);
+      }
+      if (ev.agreement_half1 != null && ev.agreement_half2 != null) {
+        parts.push(`<span>🧪 Agreement stability: ${(ev.agreement_half1 * 100).toFixed(0)}% → ${(ev.agreement_half2 * 100).toFixed(0)}%</span>`);
+      }
+      if (ev.disagreement_examples && ev.disagreement_examples.length) {
+        parts.push(`<span>💥 Disagree (unknown≠ref): ${ev.disagreement_examples.slice(0,5).map(d => `${d.unknown}≠${d.reference}`).join(', ')}${ev.disagreement_examples.length > 5 ? ', …' : ''}</span>`);
+      }
       if (ev.scale_mismatch) {
         parts.push(`<span class="warn-scalemismatch">⚠️ Scale mismatch vs reference</span>`);
       }
@@ -370,6 +382,11 @@
             <div class="metric">
               <div class="m-label">Performance</div>
               <div class="m-value">${p.estimated_performance || 'Unknown'}</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Est. Accuracy</div>
+              <div class="m-value">${p.est_accuracy_range ? (p.est_accuracy_range.best * 100).toFixed(0) + '%' : '—'}</div>
+              <div class="m-label" style="font-size:10px;">${p.est_accuracy_range ? 'range ' + (p.est_accuracy_range.lower * 100).toFixed(0) + '–' + (p.est_accuracy_range.upper * 100).toFixed(0) + '%' : ''}</div>
             </div>
             <div class="metric">
               <div class="m-label">Agreement w/ Reference</div>

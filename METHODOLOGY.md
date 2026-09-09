@@ -36,6 +36,10 @@ model (`probe_usage.json`). Order of operations matters:
    - Classifiers: fraction of equal predicted labels.
    - Regression: Pearson correlation after **z-scoring** both prediction
      series (scale/offset invariant).
+   - **Deep mode (`--deep`)**: 400 batched trials per unknown. Agreement is
+     reported with a first-half/second-half split so readers can see whether
+     the estimate has settled, plus a confusion matrix and per-class
+     disagreement examples for classifiers.
 5. **Weakness / robustness probing.** Extreme inputs (zeros, all-max, all-min,
    all-negative, huge values), small-Gaussian-noise flips, class-coverage
    (does a classifier emit all its classes?), and probability sanity
@@ -76,6 +80,26 @@ Penalties:
 Cap at 0.99 — we never claim 100% certainty.
 ```
 
+### From agreement to an accuracy estimate
+
+Raw agreement overstates an unknown's quality because the reference model is
+itself imperfect. We convert agreement `A` into an accuracy range using the
+reference's **declared** performance `r` from `general_reference_docs.md`
+(e.g. `ref_01` = 0.957, `ref_02` = 0.963, `ref_03` = 0.977):
+
+```
+E_min = A × r             — errors are ~independent (pessimistic)
+E_max = A ÷ r             — 'reference is infallible where we agree' (optimistic)
+E_best = (E_min + E_max)/2
+
+If A ≥ 0.99 the unknown is effectively the same model, so E ≈ r.
+```
+
+`est_accuracy_range {lower, best, upper}` is stored per model in `profiles.json`
+and shown on the dashboard; `estimated_performance` bands `E_best`
+(≥0.9 Good, ≥0.75 Fair, ≥0.5 Weak, else Poor/uncertain). For regression,
+`E_r² = reference_R² × corr²` (e.g. `held_03`: 0.466 × 0.58² ≈ 0.16).
+
 Every claim in `profiles.json` is tied to concrete evidence
 (`comparison_probes`, `edge_case_tests`, `output_type`, `class_coverage`,
 `correlation`) so a reviewer can audit any number.
@@ -92,8 +116,9 @@ the reason instead of forcing a confident guess:
 
 ## 4. Files
 
-- `profiler.py` — runs the full workflow for all 13 models (resilient to
-  transient network drops; saves progress incrementally).
+- `profiler.py` — runs the full workflow for all 13 models (`--deep` adds
+  400-trial comparisons; resilient to transient network drops; saves
+  progress incrementally).
 - `starter_code_snippets.py` — the core primitives (probe, type detection,
   agreement, edge cases, confidence).
 - `profiles.json` — the output this dashboard renders.

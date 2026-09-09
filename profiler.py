@@ -39,6 +39,12 @@ from starter_code_snippets import profile_one_model
 DEFAULT_COMPARISON_TRIALS = 35
 QUICK_COMPARISON_TRIALS = 10
 
+# Deep mode: stable agreement + accuracy estimate. Generous budgets (10k per
+# model) afford hundreds of trials; cap still leaves the reference budget out.
+DEEP_COMPARISON_TRIALS = 400
+# Keep this many probes untouched on the shared reference model (safety margin).
+REFERENCE_BUDGET_MARGIN = 300
+
 # Number of times to retry a whole model before recording a failure stub.
 PROFILER_ATTEMPTS = 3
 # Seconds to wait between connectivity re-checks / retries.
@@ -177,6 +183,9 @@ def main():
     parser = argparse.ArgumentParser(description="Profile all 13 hackathon models.")
     parser.add_argument("--quick", action="store_true",
                         help="Use fewer probes (quick live check / dry run).")
+    parser.add_argument("--deep", action="store_true",
+                        help="Deep comparison trials (~400/unknown) for stable agreement "
+                             "and accuracy estimates.")
     parser.add_argument("--models", nargs="*", default=None,
                         help="Only profile these model ids, e.g. --models prac_01 prac_02")
     args = parser.parse_args()
@@ -221,12 +230,25 @@ def main():
 
     profiles = []
     for mid, nfeat, budget, pool, trials in manifest:
+        # Deep trials are budget-aware: keep the shared reference model safe.
+        deep_trials = 0
+        if args.deep and pool != "reference":
+            family = config.get_family(nfeat)
+            ref_id = family.get("reference")
+            if ref_id:
+                ref_used = usage.get(ref_id, {}).get("used", 0)
+                ref_remaining = max(0, budget - ref_used)
+                deep_trials = min(DEEP_COMPARISON_TRIALS,
+                                  max(0, ref_remaining - REFERENCE_BUDGET_MARGIN))
+                print(f"    {mid}: deep trials {deep_trials} (ref {ref_id} remaining ~{ref_remaining})")
+
         last_exc = None
         prof = None
         for attempt in range(1, PROFILER_ATTEMPTS + 1):
             try:
                 candidate = profile_one_model(mid, nfeat, budget, pool,
-                                              n_comparison_trials=trials, usage=usage)
+                                              n_comparison_trials=trials,
+                                              usage=usage, deep_trials=deep_trials)
                 # A successful run should yield at least one comparison probe.
                 # Zero probes means the API was unreachable for the whole model
                 # (low-level code swallows per-call errors), so treat it as a

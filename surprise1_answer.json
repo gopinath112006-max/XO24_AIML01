@@ -1,0 +1,191 @@
+{
+  "challenge": "surprise1",
+  "pool": "https://hackathon-surprise1-pool.onrender.com",
+  "models": {
+    "A": "s1_model_a",
+    "B": "s1_model_b"
+  },
+  "task_family": "breast_cancer_binary",
+  "n_features": 34,
+  "verdict": "different",
+  "confidence": 0.88,
+  "are_they_different": true,
+  "evidence": {
+    "probes_used_per_model": 196,
+    "budget_per_model": 200,
+    "label_agreement": 0.9811320754716981,
+    "strict_agreement_labels_and_probs": 0.8930817610062893,
+    "label_flips_count": 3,
+    "prob_only_disagreement_count": 14,
+    "calibration_note": "model B is consistently more confident than model A on extreme and noisy inputs"
+  },
+  "trigger": {
+    "kind": "single-feature spike on feature 0 with all other features pinned at center (10)",
+    "feature": 0,
+    "divergence_band": {
+      "min": 37,
+      "max": 41
+    },
+    "A_class0_boundary": 37,
+    "B_class0_boundary": 42.0,
+    "meaning": "In the band f0 in [37, 41], model A predicts class 0 while model B predicts class 1",
+    "example_inputs": [
+      {
+        "input": [
+          17.423,
+          29.241,
+          10.7358,
+          34.0685,
+          33.2292,
+          3.4665,
+          35.2652,
+          9.7545,
+          18.5883,
+          24.4133,
+          15.1596,
+          1.148,
+          34.0381,
+          7.2736,
+          8.4848,
+          31.9133,
+          13.6136,
+          35.2128,
+          28.0474,
+          11.0507,
+          0.406,
+          37.9225,
+          3.4245,
+          28.803,
+          19.5431,
+          30.3266,
+          27.6244,
+          25.8361,
+          19.6329,
+          31.7173,
+          3.7221,
+          8.8639,
+          27.6715,
+          12.2482
+        ],
+        "model_A_prediction": 0,
+        "model_B_prediction": 1,
+        "model_A_probs": [
+          0.9019529704156817,
+          0.09804702958431835
+        ],
+        "model_B_probs": [
+          0.035567484488675194,
+          0.9644325155113248
+        ],
+        "scan": "family-random"
+      },
+      {
+        "input": [
+          27.2291,
+          1.2628,
+          37.9282,
+          4.3958,
+          0.7575,
+          12.5477,
+          6.0573,
+          27.62,
+          16.4151,
+          30.9989,
+          36.8208,
+          34.9127,
+          29.4335,
+          2.4913,
+          5.5233,
+          8.2937,
+          13.002,
+          26.4891,
+          21.0191,
+          12.5501,
+          6.9273,
+          36.485,
+          13.6931,
+          14.1715,
+          30.8796,
+          28.837,
+          25.7324,
+          27.7325,
+          24.4031,
+          7.6906,
+          9.8608,
+          22.3235,
+          8.9947,
+          38.9164
+        ],
+        "model_A_prediction": 0,
+        "model_B_prediction": 1,
+        "model_A_probs": [
+          0.9277549907099572,
+          0.0722450092900429
+        ],
+        "model_B_probs": [
+          0.44625929911033546,
+          0.5537407008896645
+        ],
+        "scan": "family-random"
+      },
+      {
+        "input": [
+          40.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0
+        ],
+        "model_A_prediction": 0,
+        "model_B_prediction": 1,
+        "model_A_probs": [
+          0.8191593054255739,
+          0.1808406945744261
+        ],
+        "model_B_probs": [
+          0.2916623133755163,
+          0.7083376866244837
+        ],
+        "scan": "extreme+noise"
+      }
+    ]
+  },
+  "finding": "They ARE different: 3 inputs flipped labels (all model A->model B), and 14 more agreed on the label but disagreed on probabilities. Cleanest trigger: f0=40.0 (this feature at max/edge while all others stay at center) flips model B to class 1. model B reads as more confident than model A on extreme/noisy inputs.",
+  "methodology": [
+    "Round 0: output-format parity check (probs present, shape, prediction type).",
+    "Round 1: broad scan of plausible task-family inputs (uniform 0-40, 34 features).",
+    "Round 2: structured extremes and robustness (zeros, max, negatives, 1e3 magnitude, noise at 5 scales, permutations/flips).",
+    "Round 3: adaptive boundary hunt on the feature that already split the models.",
+    "f0 sweep: pin all features at 10, vary feature 0 across [-20, 100] to map both class-0 boundaries.",
+    "Verdict uses strict agreement (labels AND probability vectors equal)."
+  ]
+}
