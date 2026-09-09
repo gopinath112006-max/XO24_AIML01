@@ -1,0 +1,106 @@
+{
+  "ref_01": {
+    "pool_set": "reference",
+    "n_features": 70,
+    "budget": 10000,
+    "used": 0,
+    "remaining": 10000,
+    "percent_used": 0.0
+  },
+  "ref_02": {
+    "pool_set": "reference",
+    "n_features": 17,
+    "budget": 10000,
+    "used": 0,
+    "remaining": 10000,
+    "percent_used": 0.0
+  },
+  "ref_03": {
+    "pool_set": "reference",
+    "n_features": 34,
+    "budget": 10000,
+    "used": 0,
+    "remaining": 10000,
+    "percent_used": 0.0
+  },
+  "ref_04": {
+    "pool_set": "reference",
+    "n_features": 14,
+    "budget": 10000,
+    "used": 0,
+    "remaining": 10000,
+    "percent_used": 0.0
+  },
+  "prac_01": {
+    "pool_set": "practice",
+    "n_features": 17,
+    "budget": 500,
+    "used": 0,
+    "remaining": 500,
+    "percent_used": 0.0
+  },
+  "prac_02": {
+    "pool_set": "practice",
+    "n_features": 34,
+    "budget": 500,
+    "used": 0,
+    "remaining": 500,
+    "percent_used": 0.0
+  },
+  "prac_03": {
+    "pool_set": "practice",
+    "n_features": 70,
+    "budget": 500,
+    "used": 0,
+    "remaining": 500,
+    "percent_used": 0.0
+  },
+  "prac_04": {
+    "pool_set": "practice",
+    "n_features": 14,
+    "budget": 500,
+    "used": 0,
+    "remaining": 500,
+    "percent_used": 0.0
+  },
+  "prac_05": {
+    "pool_set": "practice",
+    "n_features": 34,
+    "budget": 500,
+    "used": 0,
+    "remaining": 500,
+    "percent_used": 0.0
+  },
+  "held_01": {
+    "pool_set": "held_out",
+    "n_features": 70,
+    "budget": 150,
+    "used": 0,
+    "remaining": 150,
+    "percent_used": 0.0
+  },
+  "held_02": {
+    "pool_set": "held_out",
+    "n_features": 17,
+    "budget": 150,
+    "used": 0,
+    "remaining": 150,
+    "percent_used": 0.0
+  },
+  "held_03": {
+    "pool_set": "held_out",
+    "n_features": 34,
+    "budget": 150,
+    "used": 0,
+    "remaining": 150,
+    "percent_used": 0.0
+  },
+  "held_04": {
+    "pool_set": "held_out",
+    "n_features": 14,
+    "budget": 150,
+    "used": 0,
+    "remaining": 150,
+    "percent_used": 0.0
+  }
+}
