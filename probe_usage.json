@@ -3,104 +3,104 @@
     "pool_set": "reference",
     "n_features": 70,
     "budget": 10000,
-    "used": 0,
-    "remaining": 10000,
-    "percent_used": 0.0
+    "used": 982,
+    "remaining": 9018,
+    "percent_used": 9.8
   },
   "ref_02": {
     "pool_set": "reference",
     "n_features": 17,
     "budget": 10000,
-    "used": 0,
-    "remaining": 10000,
-    "percent_used": 0.0
+    "used": 5561,
+    "remaining": 4439,
+    "percent_used": 55.6
   },
   "ref_03": {
     "pool_set": "reference",
     "n_features": 34,
     "budget": 10000,
-    "used": 0,
-    "remaining": 10000,
-    "percent_used": 0.0
+    "used": 728,
+    "remaining": 9272,
+    "percent_used": 7.3
   },
   "ref_04": {
     "pool_set": "reference",
     "n_features": 14,
     "budget": 10000,
-    "used": 0,
-    "remaining": 10000,
-    "percent_used": 0.0
+    "used": 785,
+    "remaining": 9215,
+    "percent_used": 7.8
   },
   "prac_01": {
     "pool_set": "practice",
     "n_features": 17,
-    "budget": 500,
-    "used": 0,
-    "remaining": 500,
-    "percent_used": 0.0
+    "budget": 10000,
+    "used": 5483,
+    "remaining": 4517,
+    "percent_used": 54.8
   },
   "prac_02": {
     "pool_set": "practice",
-    "n_features": 34,
-    "budget": 500,
-    "used": 0,
-    "remaining": 500,
-    "percent_used": 0.0
+    "n_features": 14,
+    "budget": 10000,
+    "used": 471,
+    "remaining": 9529,
+    "percent_used": 4.7
   },
   "prac_03": {
     "pool_set": "practice",
     "n_features": 70,
-    "budget": 500,
-    "used": 0,
-    "remaining": 500,
-    "percent_used": 0.0
+    "budget": 10000,
+    "used": 396,
+    "remaining": 9604,
+    "percent_used": 4.0
   },
   "prac_04": {
     "pool_set": "practice",
-    "n_features": 14,
-    "budget": 500,
-    "used": 0,
-    "remaining": 500,
-    "percent_used": 0.0
-  },
-  "prac_05": {
-    "pool_set": "practice",
     "n_features": 34,
-    "budget": 500,
-    "used": 0,
-    "remaining": 500,
-    "percent_used": 0.0
+    "budget": 10000,
+    "used": 396,
+    "remaining": 9604,
+    "percent_used": 4.0
   },
   "held_01": {
     "pool_set": "held_out",
-    "n_features": 70,
-    "budget": 150,
-    "used": 0,
-    "remaining": 150,
-    "percent_used": 0.0
+    "n_features": 17,
+    "budget": 10000,
+    "used": 4562,
+    "remaining": 5438,
+    "percent_used": 45.6
   },
   "held_02": {
     "pool_set": "held_out",
-    "n_features": 17,
-    "budget": 150,
-    "used": 0,
-    "remaining": 150,
-    "percent_used": 0.0
+    "n_features": 70,
+    "budget": 10000,
+    "used": 382,
+    "remaining": 9618,
+    "percent_used": 3.8
   },
   "held_03": {
     "pool_set": "held_out",
-    "n_features": 34,
-    "budget": 150,
-    "used": 0,
-    "remaining": 150,
-    "percent_used": 0.0
+    "n_features": 14,
+    "budget": 10000,
+    "used": 368,
+    "remaining": 9632,
+    "percent_used": 3.7
   },
   "held_04": {
     "pool_set": "held_out",
-    "n_features": 14,
-    "budget": 150,
-    "used": 0,
-    "remaining": 150,
-    "percent_used": 0.0
+    "n_features": 34,
+    "budget": 10000,
+    "used": 382,
+    "remaining": 9618,
+    "percent_used": 3.8
+  },
+  "held_05": {
+    "pool_set": "held_out",
+    "n_features": 70,
+    "budget": 10000,
+    "used": 361,
+    "remaining": 9639,
+    "percent_used": 3.6
   }
 }

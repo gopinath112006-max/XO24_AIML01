@@ -86,6 +86,15 @@ def _as_class(id_pred, prob_ref) -> bool:
     return isinstance(id_pred, list) and len(id_pred) >= 1 and isinstance(id_pred[0], (int, float))
 
 
+def _nonfinite(x) -> bool:
+    """True if x is NaN or infinite."""
+    try:
+        f = float(x)
+    except (TypeError, ValueError):
+        return True
+    return np.isnan(f) or np.isinf(f)
+
+
 def compare_with_reference(model_id: str, n_features: int, n_trials: int = 15):
     """Send identical inputs to the unknown and its matched reference;
     measure how often their *class/task* outputs agree.
@@ -95,7 +104,10 @@ def compare_with_reference(model_id: str, n_features: int, n_trials: int = 15):
     family = infer_task_by_shape(n_features)
     ref_id = family["reference"]
     task = family["task"]
+    is_regression = "regression" in task
 
+    unknown_vals = []
+    ref_vals = []
     agreements = 0
     comparisons = []
     for _ in range(n_trials):
@@ -109,18 +121,32 @@ def compare_with_reference(model_id: str, n_features: int, n_trials: int = 15):
         unk = pred_unknown.get("predictions", [None])[0]
         ref = pred_ref.get("predictions", [None])[0]
 
-        # Classifier agreement: direct label equality.
-        if isinstance(unk, (int, float)) and isinstance(ref, (int, float)):
-            agree = (unk == ref)
-        elif isinstance(unk, list) and isinstance(ref, int):  # unknown gives probs
-            agree = (int(np.argmax(unk)) == ref)
-        elif isinstance(unk, list) and isinstance(ref, list):  # both probs
-            agree = (int(np.argmax(unk)) == int(np.argmax(ref)))
-        else:
-            agree = (unk == ref)
+        # Normalise to a scalar for scoring.
+        unk_s = int(np.argmax(unk)) if isinstance(unk, list) else unk
+        ref_s = int(np.argmax(ref)) if isinstance(ref, list) else ref
 
-        agreements += int(agree)
-        comparisons.append({"unknown": unk, "reference": ref, "agree": agree})
+        if is_regression:
+            # Compare sequences via correlation / relative error rather than
+            # exact float equality (two regressors never emit identical floats).
+            if unk_s is not None and ref_s is not None and not _nonfinite(unk_s) and not _nonfinite(ref_s):
+                unknown_vals.append(float(unk_s))
+                ref_vals.append(float(ref_s))
+                comparisons.append({"unknown": unk_s, "reference": ref_s, "agree": None})
+        else:
+            if isinstance(unk_s, (int, float)) and isinstance(ref_s, (int, float)) \
+                    and not _nonfinite(unk_s) and not _nonfinite(ref_s):
+                agree = (int(unk_s) == int(ref_s))
+                agreements += int(agree)
+                comparisons.append({"unknown": unk_s, "reference": ref_s, "agree": agree})
+
+    if is_regression and len(unknown_vals) >= 2:
+        # Agreement = Pearson correlation of the two prediction series.
+        corr = np.corrcoef(unknown_vals, ref_vals)[0, 1]
+        if np.isnan(corr):
+            corr = 0.0
+        # Convert [-1,1] correlation into a 0..1 agreement score.
+        rate = max(0.0, float(corr))
+        return rate, len(unknown_vals), comparisons
 
     rate = (agreements / len(comparisons)) if comparisons else 0.0
     return rate, len(comparisons), comparisons
@@ -254,15 +280,23 @@ def estimate_performance(agreement_rate: float, task: str) -> str:
 # ---------------------------------------------------------------------------
 def generate_profile(model_id: str, n_features: int, budget: int, pool_set: str,
                      agreement_rate, n_comparison_probes: int,
-                     weaknesses: list) -> dict:
+                     weaknesses: list, usage: dict = None) -> dict:
     family = infer_task_by_shape(n_features)
     shape_match = family["reference"] is not None
     conf = calculate_confidence(shape_match, agreement_rate, n_comparison_probes,
                                 n_features, has_edge_weaknesses=bool(weaknesses))
 
-    from starter_kit import get_usage
-    usage = get_usage().get(model_id, {"used": 0, "budget": budget})
-    used = usage.get("used", 0)
+    # Usage is best-effort: if we can't fetch it, fall back to budget as an
+    # upper bound and report 0 used. Never let a failed usage fetch discard a
+    # valid profile (that used to replace good agreement data with a placeholder).
+    if usage is None:
+        try:
+            from starter_kit import get_usage
+            usage = get_usage()
+        except RuntimeError:
+            usage = {}
+    used = usage.get(model_id, {}).get("used", 0)
+    used = used if isinstance(used, int) else 0
 
     return {
         "model_id": model_id,
@@ -289,7 +323,7 @@ def generate_profile(model_id: str, n_features: int, budget: int, pool_set: str,
 # Full single-model workflow
 # ---------------------------------------------------------------------------
 def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str,
-                      n_comparison_trials: int = 15) -> dict:
+                      n_comparison_trials: int = 15, usage: dict = None) -> dict:
     family = infer_task_by_shape(n_features)
     print(f"\n=== Profiling {model_id} (family: {family['task']}) ===")
 
@@ -299,7 +333,7 @@ def profile_one_model(model_id: str, n_features: int, budget: int, pool_set: str
     weaknesses = test_edge_cases(model_id, n_features, family["task"])
     print(f"  weaknesses detected: {len(weaknesses)}")
 
-    return generate_profile(model_id, n_features, budget, pool_set, rate, n_comp, weaknesses)
+    return generate_profile(model_id, n_features, budget, pool_set, rate, n_comp, weaknesses, usage=usage)
 
 
 if __name__ == "__main__":

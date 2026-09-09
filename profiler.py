@@ -21,7 +21,9 @@ Phase mapping:
 import argparse
 import json
 import os
+import socket
 import sys
+import time
 
 import config
 import starter_kit
@@ -33,27 +35,72 @@ from starter_code_snippets import profile_one_model
 # ---------------------------------------------------------------------------
 # How many comparison trials to run per unknown model. Comparison uses
 # 2 probes per trial (unknown + reference). Edge-case testing costs a few
-# more probes. These stay well inside the 500/150 budgets.
+# more probes. These stay well inside the 10,000-probe budgets.
 DEFAULT_COMPARISON_TRIALS = 15
 QUICK_COMPARISON_TRIALS = 6
 
+# Number of times to retry a whole model before recording a failure stub.
+PROFILER_ATTEMPTS = 3
+# Seconds to wait between connectivity re-checks / retries.
+CONNECTIVITY_RECHECK_S = 15
+CONNECTIVITY_MAX_WAIT_S = 120
+
+
+def _dns_resolves() -> bool:
+    """True if the API hostname currently resolves via DNS."""
+    try:
+        host = config.GENERAL_POOL_URL.split("//")[1].split("/")[0]
+        socket.getaddrinfo(host, 443)
+        return True
+    except socket.gaierror:
+        return False
+
+
+def _wait_for_connectivity():
+    """If DNS is down (transient outage), poll until it recovers (up to a cap)."""
+    waited = 0
+    while not _dns_resolves() and waited < CONNECTIVITY_MAX_WAIT_S:
+        print(f"    ... waiting for DNS/network to recover (elapsed {waited}s)")
+        time.sleep(CONNECTIVITY_RECHECK_S)
+        waited += CONNECTIVITY_RECHECK_S
+    # Give the app a moment once DNS is back.
+    time.sleep(2)
+
 
 def build_model_manifest(quick: bool):
-    """Return list of (model_id, n_features, budget, pool_set, trials)."""
+    """Return list of (model_id, n_features, budget, pool_set, trials).
+
+    Uses the live API manifest when available (authoritative), falling back
+    to the static config tables otherwise.
+    """
     trials = QUICK_COMPARISON_TRIALS if quick else DEFAULT_COMPARISON_TRIALS
     manifest = []
 
-    # References first (calibration phase) — we still probe them lightly to
-    # confirm documented behavior, but keep spend tiny relative to 10k budget.
+    api_manifest = config.load_manifest_from_api()
+    if api_manifest:
+        # References, then practice, then held-out, preserving API order.
+        order = {"reference": 0, "practice": 1, "held_out": 2}
+        entries = sorted(
+            api_manifest["by_pool"]["reference"]
+            + api_manifest["by_pool"]["practice"]
+            + api_manifest["by_pool"]["held_out"],
+            key=lambda e: (order.get(e["pool_set"], 9), e["model_id"]),
+        )
+        # References get fewer probing trials (calibration only); unknowns get full trials.
+        t = trials if not quick else min(trials, 8)
+        for e in entries:
+            is_ref = e["pool_set"] == "reference"
+            per = min(t, 8) if (is_ref or e["pool_set"] == "held_out") else t
+            manifest.append((e["model_id"], e["n_features"], e["budget"], e["pool_set"], per))
+        return manifest
+
+    # Fallback to static config tables.
     for mid, spec in config.REFERENCE_MODELS.items():
         manifest.append((mid, spec["n_features"], spec["budget"], "reference", min(trials, 8)))
-
-    # Then practice models (primary characterization targets).
     for mid, spec in config.UNKNOWN_MODELS.items():
         pool = "practice" if mid.startswith("prac") else "held_out"
         t = trials if pool == "practice" else min(trials, 8)
         manifest.append((mid, spec["n_features"], spec["budget"], pool, t))
-
     return manifest
 
 
@@ -127,39 +174,73 @@ def main():
             sys.exit(1)
 
     mode = "QUICK" if args.quick else "FULL"
-    print(f">>> Profiling {len(manifest)} models in {mode} mode "
+    print(f">>>> Profiling {len(manifest)} models in {mode} mode "
           f"(comparison trials per model)")
     print("    budget summary (probes):")
     total = sum(b for _, _, b, _, _ in manifest)
     print(f"    total probe budget = {total}")
     print(f"    committed comparison probes ~= {sum(t for _, _, _, _, t in manifest) * 2}")
 
+    # Fetch usage once, best-effort, so a failure here doesn't hit every model.
+    try:
+        usage = starter_kit.get_usage()
+        print(f"    usage fetched for {len(usage)} models")
+    except RuntimeError as exc:
+        print(f"    WARN: initial usage fetch failed ({exc}); proceeding without it.")
+        usage = {}
+
     profiles = []
     for mid, nfeat, budget, pool, trials in manifest:
-        try:
-            prof = profile_one_model(mid, nfeat, budget, pool, n_comparison_trials=trials)
+        last_exc = None
+        prof = None
+        for attempt in range(1, PROFILER_ATTEMPTS + 1):
+            try:
+                candidate = profile_one_model(mid, nfeat, budget, pool,
+                                              n_comparison_trials=trials, usage=usage)
+                # A successful run should yield at least one comparison probe.
+                # Zero probes means the API was unreachable for the whole model
+                # (low-level code swallows per-call errors), so treat it as a
+                # failed attempt and retry after waiting for connectivity.
+                if candidate["evidence"]["comparison_probes"] == 0:
+                    prof = None
+                    raise RuntimeError("0 successful comparison probes (API unreachable?)")
+                prof = candidate
+                break
+            except RuntimeError as exc:
+                last_exc = exc
+                if attempt < PROFILER_ATTEMPTS:
+                    print(f"    !! {mid} attempt {attempt}/{PROFILER_ATTEMPTS} failed "
+                          f"({type(exc).__name__}: {exc}); waiting and retrying...")
+                    _wait_for_connectivity()
+
+        if prof is not None:
             profiles.append(prof)
             # Live progress
             print(f"    -> {mid}: {prof['inferred_task']} "
                   f"(conf {prof['task_confidence']:.2f}, "
                   f"{prof['evidence']['comparison_probes']} cmp trials, "
                   f"{len(prof['weaknesses'])} weaknesses)")
-        except RuntimeError as exc:
-            # Don't crash the whole run; record an honest low-confidence stub.
-            print(f"    !! {mid} failed ({exc}); recording placeholder profile")
+        else:
+            # All attempts failed; record an honest low-confidence stub.
+            print(f"    !! {mid} failed after {PROFILER_ATTEMPTS} attempts "
+                  f"({last_exc}); recording infrastructure-error profile")
             profiles.append({
                 "model_id": mid,
                 "pool_set": pool,
                 "inferred_task": "unknown",
-                "task_confidence": 0.10,
-                "estimated_performance": "Unknown (probe error)",
+                "task_confidence": 0.05,
+                "estimated_performance": "Unknown (API unreachable)",
                 "agreement_with_reference": None,
-                "weaknesses": [{"type": "probe_error", "description": str(exc), "severity": "high"}],
+                "weaknesses": [{"type": "api_unreachable",
+                                "description": f"Could not reach API after retries: {last_exc}",
+                                "severity": "high"}],
                 "probe_utilization": {"budget": budget, "used": 0, "percent": 0.0},
                 "evidence": {"shape_match": False, "comparison_probes": 0, "edge_case_tests": 0},
             })
 
-    write_profiles(profiles)
+        # Incremental save protects against a late run-killer loss.
+        write_profiles(profiles)
+
     record_usage(manifest)
     print("\nDone. Regenerate the dashboard view by reloading profiles.json.")
 

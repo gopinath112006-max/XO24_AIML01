@@ -41,16 +41,17 @@ REFERENCE_MODELS = {
 }
 
 # Practice and held-out models (unknown) are matched to references by feature count.
+# NOTE: These mirror the live API manifest (all budgets are 10,000 probes).
 UNKNOWN_MODELS = {
-    "prac_01": {"n_features": 17, "budget": 500},
-    "prac_02": {"n_features": 34, "budget": 500},
-    "prac_03": {"n_features": 70, "budget": 500},
-    "prac_04": {"n_features": 14, "budget": 500},
-    "prac_05": {"n_features": 34, "budget": 500},
-    "held_01": {"n_features": 70, "budget": 150},
-    "held_02": {"n_features": 17, "budget": 150},
-    "held_03": {"n_features": 34, "budget": 150},
-    "held_04": {"n_features": 14, "budget": 150},
+    "prac_01": {"n_features": 17, "budget": 10000},
+    "prac_02": {"n_features": 14, "budget": 10000},
+    "prac_03": {"n_features": 70, "budget": 10000},
+    "prac_04": {"n_features": 34, "budget": 10000},
+    "held_01": {"n_features": 17, "budget": 10000},
+    "held_02": {"n_features": 70, "budget": 10000},
+    "held_03": {"n_features": 14, "budget": 10000},
+    "held_04": {"n_features": 34, "budget": 10000},
+    "held_05": {"n_features": 70, "budget": 10000},
 }
 
 # Feature count -> reference family mapping (shape matching, free of cost).
@@ -61,6 +62,31 @@ FEATURE_TO_FAMILY = {
     34: {"task": "breast_cancer_binary", "reference": "ref_03"},
     14: {"task": "diabetes_progression_regression", "reference": "ref_04"},
 }
+
+
+def load_manifest_from_api():
+    """Fetch the authoritative model list from the API.
+
+    The live API is the source of truth for model ids, feature counts,
+    budgets and pool sets. This replaces the hard-coded tables.
+    """
+    try:
+        from starter_kit import list_models
+        models = list_models()
+    except Exception:
+        return None
+    manifest = {"models": {}, "by_pool": {"reference": [], "practice": [], "held_out": []}}
+    for m in models:
+        mid = m["model_id"]
+        entry = {
+            "model_id": mid,
+            "pool_set": m["pool_set"],
+            "n_features": m["n_features_expected"],
+            "budget": m["probe_budget"],
+        }
+        manifest["models"][mid] = entry
+        manifest["by_pool"][m["pool_set"]].append(entry)
+    return manifest
 
 
 def get_family(n_features: int):

@@ -3,361 +3,354 @@
     "model_id": "ref_01",
     "pool_set": "reference",
     "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.97,
-    "estimated_performance": "Excellent (95.7%)",
+    "task_confidence": 0.74,
+    "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
-    "correct_reference": true,
     "weaknesses": [
       {
-        "type": "known_confusion",
-        "description": "Known MNIST confusions (4/9, 3/8) under noise",
-        "severity": "low"
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
+        "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 0,
-      "percent": 0.0
+      "used": 918,
+      "percent": 9.2
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 0,
-      "edge_case_tests": 0
-    },
-    "overview": "Documented reference model. Classifies handwritten digits (70 features) with 95.7% accuracy. Used as a calibration anchor for the digits family."
+      "comparison_probes": 8,
+      "edge_case_tests": 1
+    }
   },
   {
     "model_id": "ref_02",
     "pool_set": "reference",
     "inferred_task": "wine_classification_3class",
-    "task_confidence": 0.97,
-    "estimated_performance": "Excellent (96.3%)",
+    "task_confidence": 0.74,
+    "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
-    "correct_reference": true,
     "weaknesses": [
       {
-        "type": "known_boundary",
-        "description": "Known overlap between wine cultivars 2 and 3 near decision boundary",
-        "severity": "low"
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
+        "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 0,
-      "percent": 0.0
+      "used": 5505,
+      "percent": 55.0
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 0,
-      "edge_case_tests": 0
-    },
-    "overview": "Documented reference model. Classifies wine cultivars (17 features) with 96.3% accuracy. Calibration anchor for the wine family."
+      "comparison_probes": 8,
+      "edge_case_tests": 1
+    }
   },
   {
     "model_id": "ref_03",
     "pool_set": "reference",
     "inferred_task": "breast_cancer_binary",
-    "task_confidence": 0.97,
-    "estimated_performance": "Excellent (97.7%)",
+    "task_confidence": 0.74,
+    "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
-    "correct_reference": true,
     "weaknesses": [
       {
-        "type": "known_false_negative",
-        "description": "Known FN risk on borderline malignant cases",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 0,
-      "percent": 0.0
+      "used": 672,
+      "percent": 6.7
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 0,
-      "edge_case_tests": 0
-    },
-    "overview": "Documented reference model. Binary breast cancer classification (34 features) with 97.7% accuracy. Calibration anchor for the cancer family."
+      "comparison_probes": 8,
+      "edge_case_tests": 1
+    }
   },
   {
     "model_id": "ref_04",
     "pool_set": "reference",
     "inferred_task": "diabetes_progression_regression",
-    "task_confidence": 0.97,
-    "estimated_performance": "Good (R² = 0.466)",
+    "task_confidence": 0.74,
+    "estimated_performance": "Good (R\u00b2 ~ 0.40-0.50)",
     "agreement_with_reference": 1.0,
-    "correct_reference": true,
     "weaknesses": [
       {
-        "type": "known_low_r2",
-        "description": "Regression only explains 46.6% of variance",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
         "severity": "medium"
+      },
+      {
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_large)",
+        "severity": "medium"
+      },
+      {
+        "type": "noise_sensitivity",
+        "description": "Prediction changes with small noise on 5/5 trials",
+        "severity": "high"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 0,
-      "percent": 0.0
+      "used": 729,
+      "percent": 7.3
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 0,
-      "edge_case_tests": 0
-    },
-    "overview": "Documented reference model. Diabetes progression regression (14 features) with R² = 0.466. Calibration anchor for the regression family."
+      "comparison_probes": 8,
+      "edge_case_tests": 3
+    }
   },
   {
     "model_id": "prac_01",
     "pool_set": "practice",
     "inferred_task": "wine_classification_3class",
-    "task_confidence": 0.78,
-    "estimated_performance": "Good (85-95%)",
-    "agreement_with_reference": 0.92,
-    "correct_reference": false,
+    "task_confidence": 0.525,
+    "estimated_performance": "Fair (70-85%)",
+    "agreement_with_reference": 0.8,
     "weaknesses": [
       {
-        "type": "noise_sensitivity",
-        "description": "Prediction changes with 5% Gaussian noise",
-        "severity": "low"
-      }
-    ],
-    "probe_utilization": {
-      "budget": 500,
-      "used": 47,
-      "percent": 9.4
-    },
-    "evidence": {
-      "shape_match": true,
-      "comparison_probes": 15,
-      "edge_case_tests": 8
-    },
-    "overview": "Shape match to wine family (17 features). 92% agreement with ref_02 across 15 comparison probes. Moderate confidence pending further probing."
-  },
-  {
-    "model_id": "prac_02",
-    "pool_set": "practice",
-    "inferred_task": "breast_cancer_binary",
-    "task_confidence": 0.74,
-    "estimated_performance": "Good (85-95%)",
-    "agreement_with_reference": 0.88,
-    "correct_reference": false,
-    "weaknesses": [
-      {
-        "type": "boundary_instability",
-        "description": "Unstable predictions at feature extremes",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
-      "budget": 500,
-      "used": 53,
-      "percent": 10.6
+      "budget": 10000,
+      "used": 5451,
+      "percent": 54.5
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 18,
-      "edge_case_tests": 10
+      "comparison_probes": 15,
+      "edge_case_tests": 1
+    }
+  },
+  {
+    "model_id": "prac_02",
+    "pool_set": "practice",
+    "inferred_task": "diabetes_progression_regression",
+    "task_confidence": 0.275,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.0,
+    "weaknesses": [
+      {
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
+        "severity": "medium"
+      },
+      {
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_large)",
+        "severity": "medium"
+      },
+      {
+        "type": "noise_sensitivity",
+        "description": "Prediction changes with small noise on 5/5 trials",
+        "severity": "high"
+      }
+    ],
+    "probe_utilization": {
+      "budget": 10000,
+      "used": 439,
+      "percent": 4.4
     },
-    "overview": "Shape match to cancer family (34 features). 88% agreement with ref_03 across 18 comparison probes. Moderate confidence."
+    "evidence": {
+      "shape_match": true,
+      "comparison_probes": 15,
+      "edge_case_tests": 3
+    }
   },
   {
     "model_id": "prac_03",
     "pool_set": "practice",
     "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.66,
-    "estimated_performance": "Fair (70-85%)",
-    "agreement_with_reference": 0.74,
-    "correct_reference": false,
+    "task_confidence": 0.275,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.26666666666666666,
     "weaknesses": [
       {
-        "type": "heavy_noise_sensitivity",
-        "description": "Strong label flips under moderate noise",
-        "severity": "high"
-      },
-      {
-        "type": "digit_confusion",
-        "description": "Confuses 4/9 and 7/9 patterns",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
-      "budget": 500,
-      "used": 61,
-      "percent": 12.2
+      "budget": 10000,
+      "used": 364,
+      "percent": 3.6
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 20,
-      "edge_case_tests": 12
-    },
-    "overview": "Shape match to digits family (70 features). Only 74% agreement with ref_01; likely a weaker or differently-trained digit classifier. Lower confidence."
+      "comparison_probes": 15,
+      "edge_case_tests": 1
+    }
   },
   {
     "model_id": "prac_04",
     "pool_set": "practice",
-    "inferred_task": "diabetes_progression_regression",
-    "task_confidence": 0.80,
-    "estimated_performance": "Good (R² ~ 0.40-0.50)",
-    "agreement_with_reference": 0.90,
-    "correct_reference": false,
+    "inferred_task": "breast_cancer_binary",
+    "task_confidence": 0.275,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.6666666666666666,
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Large deviations on extreme input values",
+        "description": "Prediction flips on extreme input (all_large)",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
-      "budget": 500,
-      "used": 45,
-      "percent": 9.0
+      "budget": 10000,
+      "used": 364,
+      "percent": 3.6
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 16,
-      "edge_case_tests": 9
-    },
-    "overview": "Shape match to regression family (14 features). 90% agreement with ref_04. Good confidence on task type."
-  },
-  {
-    "model_id": "prac_05",
-    "pool_set": "practice",
-    "inferred_task": "breast_cancer_binary",
-    "task_confidence": 0.71,
-    "estimated_performance": "Good (85-95%)",
-    "agreement_with_reference": 0.86,
-    "correct_reference": false,
-    "weaknesses": [
-      {
-        "type": "seed_dependence",
-        "description": "Output varies with training seed, slight instability",
-        "severity": "low"
-      }
-    ],
-    "probe_utilization": {
-      "budget": 500,
-      "used": 38,
-      "percent": 7.6
-    },
-    "evidence": {
-      "shape_match": true,
-      "comparison_probes": 14,
-      "edge_case_tests": 7
-    },
-    "overview": "Shape match to cancer family (34 features). 86% agreement with ref_03. Moderate confidence."
+      "comparison_probes": 15,
+      "edge_case_tests": 1
+    }
   },
   {
     "model_id": "held_01",
     "pool_set": "held_out",
-    "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.52,
-    "estimated_performance": "Unknown (insufficient probes)",
-    "agreement_with_reference": 0.63,
-    "correct_reference": false,
-    "weaknesses": [
-      {
-        "type": "low_probe_coverage",
-        "description": "Only 150-probe budget; limited evidence collected",
-        "severity": "medium"
-      }
-    ],
-    "probe_utilization": {
-      "budget": 150,
-      "used": 22,
-      "percent": 14.7
-    },
-    "evidence": {
-      "shape_match": true,
-      "comparison_probes": 9,
-      "edge_case_tests": 5
-    },
-    "overview": "Shape matched to digits family (70 features). 63% agreement with ref_01 but few probes. Low-to-moderate confidence, needs more evidence."
-  },
-  {
-    "model_id": "held_02",
-    "pool_set": "held_out",
     "inferred_task": "wine_classification_3class",
-    "task_confidence": 0.55,
-    "estimated_performance": "Unknown (insufficient probes)",
-    "agreement_with_reference": 0.67,
-    "correct_reference": false,
+    "task_confidence": 0.24,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.375,
     "weaknesses": [
       {
-        "type": "low_probe_coverage",
-        "description": "Only 150-probe budget; limited evidence collected",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
+        "severity": "medium"
+      },
+      {
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_large)",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
-      "budget": 150,
-      "used": 19,
-      "percent": 12.7
+      "budget": 10000,
+      "used": 4537,
+      "percent": 45.4
     },
     "evidence": {
       "shape_match": true,
       "comparison_probes": 8,
-      "edge_case_tests": 4
+      "edge_case_tests": 2
+    }
+  },
+  {
+    "model_id": "held_02",
+    "pool_set": "held_out",
+    "inferred_task": "mnist_digits_10class",
+    "task_confidence": 0.24,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.25,
+    "weaknesses": [
+      {
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
+        "severity": "medium"
+      }
+    ],
+    "probe_utilization": {
+      "budget": 10000,
+      "used": 357,
+      "percent": 3.6
     },
-    "overview": "Shape matched to wine family (17 features). 67% agreement with ref_02 but few probes. Moderate confidence."
+    "evidence": {
+      "shape_match": true,
+      "comparison_probes": 8,
+      "edge_case_tests": 1
+    }
   },
   {
     "model_id": "held_03",
     "pool_set": "held_out",
-    "inferred_task": "breast_cancer_binary",
+    "inferred_task": "diabetes_progression_regression",
     "task_confidence": 0.49,
-    "estimated_performance": "Unknown (insufficient probes)",
-    "agreement_with_reference": 0.58,
-    "correct_reference": false,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.7714708366818496,
     "weaknesses": [
       {
-        "type": "low_probe_coverage",
-        "description": "Only 150-probe budget; limited evidence collected",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
         "severity": "medium"
       },
       {
-        "type": "boundary_instability",
-        "description": "Unstable across similar inputs",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_large)",
         "severity": "medium"
+      },
+      {
+        "type": "noise_sensitivity",
+        "description": "Prediction changes with small noise on 5/5 trials",
+        "severity": "high"
       }
     ],
     "probe_utilization": {
-      "budget": 150,
-      "used": 25,
-      "percent": 16.7
+      "budget": 10000,
+      "used": 343,
+      "percent": 3.4
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 10,
-      "edge_case_tests": 6
-    },
-    "overview": "Shape matched to cancer family (34 features). 58% agreement with ref_03, few probes. Low confidence, behaves differently from reference."
+      "comparison_probes": 8,
+      "edge_case_tests": 3
+    }
   },
   {
     "model_id": "held_04",
     "pool_set": "held_out",
-    "inferred_task": "diabetes_progression_regression",
-    "task_confidence": 0.53,
-    "estimated_performance": "Unknown (insufficient probes)",
-    "agreement_with_reference": 0.64,
-    "correct_reference": false,
+    "inferred_task": "breast_cancer_binary",
+    "task_confidence": 0.24,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.625,
     "weaknesses": [
       {
-        "type": "low_probe_coverage",
-        "description": "Only 150-probe budget; limited evidence collected",
+        "type": "extreme_input_drift",
+        "description": "Prediction flips on extreme input (all_negative)",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
-      "budget": 150,
-      "used": 16,
-      "percent": 10.7
+      "budget": 10000,
+      "used": 357,
+      "percent": 3.6
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 7,
-      "edge_case_tests": 3
+      "comparison_probes": 8,
+      "edge_case_tests": 1
+    }
+  },
+  {
+    "model_id": "held_05",
+    "pool_set": "held_out",
+    "inferred_task": "mnist_digits_10class",
+    "task_confidence": 0.79,
+    "estimated_performance": "Good (85-95%)",
+    "agreement_with_reference": 1.0,
+    "weaknesses": [],
+    "probe_utilization": {
+      "budget": 10000,
+      "used": 336,
+      "percent": 3.4
     },
-    "overview": "Shape matched to regression family (14 features). 64% agreement with ref_04, few probes. Moderate confidence."
+    "evidence": {
+      "shape_match": true,
+      "comparison_probes": 8,
+      "edge_case_tests": 0
+    }
   }
 ]
