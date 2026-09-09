@@ -236,7 +236,8 @@ def main():
             ref_id = family.get("reference")
             if ref_id:
                 ref_used = usage.get(ref_id, {}).get("used", 0)
-                ref_remaining = max(0, budget - ref_used)
+                ref_budget = usage.get(ref_id, {}).get("budget", 10000)
+                ref_remaining = max(0, ref_budget - ref_used)
                 deep_trials = min(DEEP_COMPARISON_TRIALS,
                                   max(0, ref_remaining - REFERENCE_BUDGET_MARGIN))
                 print(f"    {mid}: deep trials {deep_trials} (ref {ref_id} remaining ~{ref_remaining})")

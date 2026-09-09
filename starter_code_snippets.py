@@ -218,7 +218,7 @@ def detect_output_type(model_id: str, n_features: int, task: str, n: int = 5) ->
     # Integer-only outputs also indicate classification (labels, no probs).
     if not is_cls and discrete_values is not None:
         is_cls = True
-        n_classes = n_classes or (len(discrete_values) + 1 if max(discrete_values) - min(discrete_values) <= 9 else len(discrete_values))
+        n_classes = n_classes or (max(discrete_values) - min(discrete_values) + 1 if len(discrete_values) >= 2 else 1)
 
     scale = None
     if not is_cls and floats:
@@ -721,6 +721,8 @@ def estimate_performance(agreement_rate: float, task: str,
             if est > 0.35:
                 return f"Good (R² ~ {est:.2f})"
             return f"Fair (R² ~ {est:.2f})"
+        if corr is not None and corr < -0.1:
+            return f"Poor (inverse correlation: {corr:.2f})"
         return "Unknown"
     if est_range:
         best = est_range["best"]

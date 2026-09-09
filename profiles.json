@@ -460,7 +460,7 @@
       "pool_set": "practice",
       "inferred_task": "diabetes_progression_regression",
       "task_confidence": 0.2,
-      "estimated_performance": "Unknown",
+      "estimated_performance": "Poor (inverse correlation: -0.28)",
       "agreement_with_reference": -0.2819,
       "correlation": -0.2819,
       "reference_accuracy": null,

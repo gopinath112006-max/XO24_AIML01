@@ -1,0 +1,49 @@
+{
+  "challenge": "Surprise Challenge 2: Confidence Should Match Evidence",
+  "model_id": "prac_01",
+  "model_task": "wine_classification_3class",
+  "model_features": 17,
+  "description": "Demonstrates that confidence honestly reflects evidence quantity. The same model is evaluated with full probe budget (before cut) and severely reduced budget (after cut), showing confidence drops when fewer probes are available \u2014 even though the underlying agreement rate remains the same.",
+  "before_cut": {
+    "probes_used": 400,
+    "agreement": 0.575,
+    "confidence": 0.45,
+    "inferred_task": "wine_classification_3class",
+    "est_accuracy": {
+      "best": 0.575,
+      "lower": 0.554,
+      "upper": 0.597
+    },
+    "weaknesses_found": 1,
+    "class_coverage": 3
+  },
+  "after_cut": {
+    "probes_used": 5,
+    "agreement": 0.575,
+    "confidence": 0.325,
+    "inferred_task": "wine_classification_3class",
+    "est_accuracy": {
+      "best": 0.575,
+      "lower": 0.554,
+      "upper": 0.597
+    },
+    "weaknesses_found": 1,
+    "class_coverage": 3
+  },
+  "confidence_change": {
+    "before": 0.45,
+    "after": 0.325,
+    "drop": 0.125,
+    "drop_pct": 12.5,
+    "decreased": true
+  },
+  "key_principle": "Confidence should match the amount of evidence available.",
+  "explanation": "With 400 probes, the system has strong evidence: agreement rate 57.5% over 400 comparison rows, full probe investment bonus, and stable agreement across halves. With only 5 probes, the probe investment term drops from 15% to 2.5%, and the agreement estimate is based on far fewer samples \u2014 so confidence decreases from 45.0% to 32.5%.",
+  "methodology": [
+    "Step 1: Load the existing profile for prac_01 (profiled with 400 probes).",
+    "Step 2: Recalculate confidence with full probe count (400).",
+    "Step 3: Recalculate confidence with severely reduced probe count (5).",
+    "Step 4: Compare confidence before and after the cut.",
+    "Step 5: Confidence drops from 0.450 to 0.325 \u2014 the system honestly communicates reduced certainty."
+  ]
+}

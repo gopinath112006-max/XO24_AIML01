@@ -294,8 +294,8 @@
     function profileStats(profiles) {
       const total = profiles.length;
       const avgConf = profiles.reduce((s, p) => s + p.task_confidence, 0) / (total || 1);
-      const totalUsed = profiles.reduce((s, p) => s + p.probe_utilization.used, 0);
-      const totalBudget = profiles.reduce((s, p) => s + p.probe_utilization.budget, 0);
+      const totalUsed = profiles.reduce((s, p) => s + (p.probe_utilization?.used ?? 0), 0);
+      const totalBudget = profiles.reduce((s, p) => s + (p.probe_utilization?.budget ?? 0), 0);
       const high = profiles.filter(p => p.task_confidence >= 0.8).length;
       const low = profiles.filter(p => p.task_confidence < 0.6).length;
       return { total, avgConf, totalUsed, totalBudget, high, low };
@@ -407,8 +407,8 @@
 
     function renderCard(p) {
       const confCls = confClass(p.task_confidence);
-      const used = p.probe_utilization && p.probe_utilization.used;
-      const budget = p.probe_utilization && p.probe_utilization.budget;
+      const used = p.probe_utilization?.used ?? 0;
+      const budget = p.probe_utilization?.budget ?? 0;
       const pct = budget ? Math.round((used / budget) * 100) : 0;
       const ev = p.evidence || {};
       const ot = p.output_type || {};
@@ -495,7 +495,7 @@
         case 'confidence-desc': sorted.sort((a, b) => b.task_confidence - a.task_confidence); break;
         case 'confidence-asc': sorted.sort((a, b) => a.task_confidence - b.task_confidence); break;
         case 'agreement-desc': sorted.sort((a, b) => (b.agreement_with_reference||0) - (a.agreement_with_reference||0)); break;
-        case 'probes-desc': sorted.sort((a, b) => b.probe_utilization.used - a.probe_utilization.used); break;
+        case 'probes-desc': sorted.sort((a, b) => (b.probe_utilization?.used ?? 0) - (a.probe_utilization?.used ?? 0)); break;
         case 'pool':
         default:
           sorted.sort((a, b) =>
@@ -515,10 +515,12 @@
         let currentPool = null;
         for (const p of sorted) {
           if (p.pool_set !== currentPool) {
+            if (currentPool !== null) html += '</div>';
             currentPool = p.pool_set;
             const count = sorted.filter(x => x.pool_set === currentPool).length;
+            const poolCls = currentPool === 'reference' ? 'ref' : currentPool === 'practice' ? 'prac' : 'held';
             html += `
-              <div class="pool-section pool-${currentPool === 'reference' ? 'ref' : currentPool === 'practice' ? 'prac' : 'held'}">
+              <div class="pool-section pool-${poolCls}">
                 <div class="pool-header">
                   <h2>${POOL_LABEL[currentPool]}</h2>
                   <span class="pool-badge">${POOL_LABEL[currentPool]}</span>
@@ -528,7 +530,7 @@
           }
           html += renderCard(p);
         }
-        html += '</div>';
+        if (currentPool !== null) html += '</div>';
         if (active === 'all') {
           html = renderOverview(sorted) + html;
         }
@@ -612,6 +614,54 @@
       `;
     }
 
+    function renderSurpriseChallenge2(data) {
+      if (!data) return '';
+      const cc = data.confidence_change || {};
+      const bc = data.before_cut || {};
+      const ac = data.after_cut || {};
+      const dropped = cc.decreased;
+      const arrow = dropped ? '↓' : '→';
+      const arrowColor = dropped ? 'var(--low)' : 'var(--high)';
+
+      return `
+        <div class="surprise-section" style="border-color:#8b5cf6;">
+          <h3 style="color:#8b5cf6;">Surprise Challenge 2 — Confidence Should Match Evidence</h3>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            Model: <code style="color:var(--accent)">${data.model_id || 'prac_01'}</code> ·
+            Task: ${data.model_task || 'unknown'} (${data.model_features} features)
+          </div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:14px;font-style:italic;">
+            "${data.key_principle || 'Confidence should match the amount of evidence available.'}"
+          </div>
+          <div class="surprise-grid" style="grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;">
+            <div class="surprise-metric" style="border-color:#8b5cf6;">
+              <div class="m-label">Before Cut</div>
+              <div class="m-value" style="color:#8b5cf6;">${bc.confidence != null ? (bc.confidence * 100).toFixed(1) + '%' : '—'}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+                ${bc.probes_used ?? '—'} probes · agreement ${bc.agreement != null ? (bc.agreement * 100).toFixed(1) + '%' : '—'}
+              </div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:28px;color:${arrowColor};font-weight:700;">${arrow}</div>
+              <div style="font-size:12px;color:var(--muted);">−${(cc.drop_pct ?? 0).toFixed(1)}%</div>
+            </div>
+            <div class="surprise-metric" style="border-color:#8b5cf6;">
+              <div class="m-label">After Cut</div>
+              <div class="m-value" style="color:#8b5cf6;">${ac.confidence != null ? (ac.confidence * 100).toFixed(1) + '%' : '—'}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+                ${ac.probes_used ?? '—'} probes · agreement ${ac.agreement != null ? (ac.agreement * 100).toFixed(1) + '%' : '—'}
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--muted);">
+            <b>Key observation:</b> Agreement rate stays the same (${bc.agreement != null ? (bc.agreement * 100).toFixed(1) + '%' : '—'}) —
+            only the probe count changed. The system honestly reports lower confidence with less evidence.
+          </div>
+          ${data.explanation ? `<p style="margin-top:10px;font-size:12px;color:var(--text);font-style:italic;">${data.explanation}</p>` : ''}
+        </div>
+      `;
+    }
+
     function init() {
       document.querySelectorAll('.controls button').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -624,18 +674,22 @@
 
       Promise.all([
         loadProfiles(),
-        fetch('surprise1_answer.json').then(r => r.ok ? r.json() : null).catch(() => null)
+        fetch('surprise1_answer.json').then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('surprise2_answer.json').then(r => r.ok ? r.json() : null).catch(() => null)
       ])
-        .then(([profiles, surprise1]) => {
+        .then(([profiles, surprise1, surprise2]) => {
           allProfiles = profiles;
           if (generatedAt) {
             const el = document.getElementById('generatedAtLine');
             el.textContent = 'last updated ' + generatedAt.replace('T', ' ').replace('Z', ' UTC');
           }
           render(profiles);
+          const mainEl = document.getElementById('main');
           if (surprise1) {
-            const mainEl = document.getElementById('main');
             mainEl.insertAdjacentHTML('afterbegin', renderSurpriseChallenge(surprise1));
+          }
+          if (surprise2) {
+            mainEl.insertAdjacentHTML('afterbegin', renderSurpriseChallenge2(surprise2));
           }
         })
         .catch(err => {

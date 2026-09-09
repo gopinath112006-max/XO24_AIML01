@@ -229,10 +229,9 @@ def compare_models(a_id: str = MODEL_A, b_id: str = MODEL_B,
 
     # Summary.
     total_rows = sum(t["rows"] for t in evidence["trials"])
-    label_hits = sum(t["rows"] for t in evidence["trials"])
+    n_disagreements = len(evidence["disagreements"])
+    label_agree_overall = (total_rows - n_disagreements) / total_rows if total_rows else None
     strict_hits = sum(round(t["rows"] * (t["strict_agreement"] or 0)) for t in evidence["trials"])
-    label_agree_overall = (sum(round(t["rows"] * (t["label_agreement"] or 0))
-                               for t in evidence["trials"]) / label_hits) if label_hits else None
     strict_agree_overall = strict_hits / total_rows if total_rows else None
 
     # Classify disagreements: label flips vs probability-only differences.
