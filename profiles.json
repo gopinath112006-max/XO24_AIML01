@@ -3,93 +3,145 @@
     "model_id": "ref_01",
     "pool_set": "reference",
     "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.74,
+    "task_confidence": 0.54,
     "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 10,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 1,
+      "observed": [
+        4
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 918,
-      "percent": 9.2
+      "used": 2341,
+      "percent": 23.4
     },
     "evidence": {
       "shape_match": true,
+      "type_consistent": true,
       "comparison_probes": 8,
-      "edge_case_tests": 1
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "ref_02",
     "pool_set": "reference",
     "inferred_task": "wine_classification_3class",
-    "task_confidence": 0.74,
+    "task_confidence": 0.79,
     "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 3,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 3,
+      "observed": [
+        0,
+        1,
+        2
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 5505,
-      "percent": 55.0
+      "used": 6682,
+      "percent": 66.8
     },
     "evidence": {
       "shape_match": true,
+      "type_consistent": true,
       "comparison_probes": 8,
-      "edge_case_tests": 1
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "ref_03",
     "pool_set": "reference",
     "inferred_task": "breast_cancer_binary",
-    "task_confidence": 0.74,
+    "task_confidence": 0.64,
     "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 2,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 2,
+      "observed": [
+        0,
+        1
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 672,
-      "percent": 6.7
+      "used": 1544,
+      "percent": 15.4
     },
     "evidence": {
       "shape_match": true,
+      "type_consistent": true,
       "comparison_probes": 8,
-      "edge_case_tests": 1
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "ref_04",
     "pool_set": "reference",
     "inferred_task": "diabetes_progression_regression",
-    "task_confidence": 0.74,
+    "task_confidence": 0.64,
     "estimated_performance": "Good (R\u00b2 ~ 0.40-0.50)",
-    "agreement_with_reference": 1.0,
+    "agreement_with_reference": 0.9999999999999998,
+    "correlation": 1.0,
+    "output_type": {
+      "classification": false,
+      "n_classes": null,
+      "scale": {
+        "mean": 151.8872,
+        "std": 10.4501,
+        "min": 136.6469,
+        "max": 164.1967
+      }
+    },
+    "class_coverage": null,
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
-        "severity": "medium"
-      },
-      {
-        "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_large)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       },
       {
@@ -100,56 +152,81 @@
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 729,
-      "percent": 7.3
+      "used": 2401,
+      "percent": 24.0
     },
     "evidence": {
       "shape_match": true,
+      "type_consistent": true,
       "comparison_probes": 8,
-      "edge_case_tests": 3
+      "edge_case_tests": 2,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "prac_01",
     "pool_set": "practice",
     "inferred_task": "wine_classification_3class",
-    "task_confidence": 0.525,
-    "estimated_performance": "Fair (70-85%)",
-    "agreement_with_reference": 0.8,
+    "task_confidence": 0.45,
+    "estimated_performance": "Unknown",
+    "agreement_with_reference": 0.5428571428571428,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 3,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 3,
+      "observed": [
+        0,
+        1,
+        2
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 5451,
-      "percent": 54.5
+      "used": 6258,
+      "percent": 62.6
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 15,
-      "edge_case_tests": 1
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "prac_02",
     "pool_set": "practice",
     "inferred_task": "diabetes_progression_regression",
-    "task_confidence": 0.275,
+    "task_confidence": 0.2,
     "estimated_performance": "Unknown",
     "agreement_with_reference": 0.0,
+    "correlation": -0.2492,
+    "output_type": {
+      "classification": false,
+      "n_classes": null,
+      "scale": {
+        "mean": -0.1598,
+        "std": 0.101,
+        "min": -0.2531,
+        "max": 0.0264
+      }
+    },
+    "class_coverage": null,
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
-        "severity": "medium"
-      },
-      {
-        "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_large)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       },
       {
@@ -160,136 +237,197 @@
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 439,
-      "percent": 4.4
+      "used": 2566,
+      "percent": 25.7
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 15,
-      "edge_case_tests": 3
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 2,
+      "scale_mismatch": true
     }
   },
   {
     "model_id": "prac_03",
     "pool_set": "practice",
     "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.275,
+    "task_confidence": 0.35,
     "estimated_performance": "Unknown",
-    "agreement_with_reference": 0.26666666666666666,
+    "agreement_with_reference": 0.2,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 10,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 4,
+      "observed": [
+        4,
+        6,
+        7,
+        8
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 364,
-      "percent": 3.6
+      "used": 1171,
+      "percent": 11.7
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 15,
-      "edge_case_tests": 1
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "prac_04",
     "pool_set": "practice",
     "inferred_task": "breast_cancer_binary",
-    "task_confidence": 0.275,
+    "task_confidence": 0.45,
     "estimated_performance": "Unknown",
-    "agreement_with_reference": 0.6666666666666666,
+    "agreement_with_reference": 0.5142857142857142,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 2,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 2,
+      "observed": [
+        0,
+        1
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_large)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 364,
-      "percent": 3.6
+      "used": 1205,
+      "percent": 12.0
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 15,
-      "edge_case_tests": 1
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "held_01",
     "pool_set": "held_out",
     "inferred_task": "wine_classification_3class",
-    "task_confidence": 0.24,
-    "estimated_performance": "Unknown",
-    "agreement_with_reference": 0.375,
-    "weaknesses": [
-      {
-        "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
-        "severity": "medium"
-      },
-      {
-        "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_large)",
-        "severity": "medium"
-      }
-    ],
+    "task_confidence": 0.7,
+    "estimated_performance": "Fair (70-85%)",
+    "agreement_with_reference": 0.7428571428571429,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 3,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 3,
+      "observed": [
+        0,
+        1,
+        2
+      ]
+    },
+    "weaknesses": [],
     "probe_utilization": {
       "budget": 10000,
-      "used": 4537,
-      "percent": 45.4
+      "used": 4944,
+      "percent": 49.4
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 8,
-      "edge_case_tests": 2
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 0,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "held_02",
     "pool_set": "held_out",
     "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.24,
+    "task_confidence": 0.35,
     "estimated_performance": "Unknown",
-    "agreement_with_reference": 0.25,
+    "agreement_with_reference": 0.45714285714285713,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 10,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 2,
+      "observed": [
+        4,
+        8
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 357,
-      "percent": 3.6
+      "used": 664,
+      "percent": 6.6
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 8,
-      "edge_case_tests": 1
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "held_03",
     "pool_set": "held_out",
     "inferred_task": "diabetes_progression_regression",
-    "task_confidence": 0.49,
+    "task_confidence": 0.3,
     "estimated_performance": "Unknown",
-    "agreement_with_reference": 0.7714708366818496,
+    "agreement_with_reference": 0.43624890623592755,
+    "correlation": 0.4362,
+    "output_type": {
+      "classification": false,
+      "n_classes": null,
+      "scale": {
+        "mean": 136.579,
+        "std": 5.6407,
+        "min": 125.81,
+        "max": 141.67
+      }
+    },
+    "class_coverage": null,
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
-        "severity": "medium"
-      },
-      {
-        "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_large)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       },
       {
@@ -300,57 +438,88 @@
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 343,
-      "percent": 3.4
+      "used": 825,
+      "percent": 8.2
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 8,
-      "edge_case_tests": 3
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 2,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "held_04",
     "pool_set": "held_out",
     "inferred_task": "breast_cancer_binary",
-    "task_confidence": 0.24,
-    "estimated_performance": "Unknown",
-    "agreement_with_reference": 0.625,
+    "task_confidence": 0.66,
+    "estimated_performance": "Good (85-95%)",
+    "agreement_with_reference": 0.8857142857142857,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 2,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 2,
+      "observed": [
+        0,
+        1
+      ]
+    },
     "weaknesses": [
       {
         "type": "extreme_input_drift",
-        "description": "Prediction flips on extreme input (all_negative)",
+        "description": "Prediction flips on extreme out-of-distribution inputs",
         "severity": "medium"
       }
     ],
     "probe_utilization": {
       "budget": 10000,
-      "used": 357,
-      "percent": 3.6
+      "used": 464,
+      "percent": 4.6
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 8,
-      "edge_case_tests": 1
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 1,
+      "scale_mismatch": false
     }
   },
   {
     "model_id": "held_05",
     "pool_set": "held_out",
     "inferred_task": "mnist_digits_10class",
-    "task_confidence": 0.79,
+    "task_confidence": 0.65,
     "estimated_performance": "Good (85-95%)",
     "agreement_with_reference": 1.0,
+    "correlation": null,
+    "output_type": {
+      "classification": true,
+      "n_classes": 10,
+      "scale": null
+    },
+    "class_coverage": {
+      "distinct_classes": 1,
+      "observed": [
+        4
+      ]
+    },
     "weaknesses": [],
     "probe_utilization": {
       "budget": 10000,
-      "used": 336,
-      "percent": 3.4
+      "used": 1154,
+      "percent": 11.5
     },
     "evidence": {
       "shape_match": true,
-      "comparison_probes": 8,
-      "edge_case_tests": 0
+      "type_consistent": true,
+      "comparison_probes": 35,
+      "edge_case_tests": 0,
+      "scale_mismatch": false
     }
   }
 ]

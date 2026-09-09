@@ -34,10 +34,10 @@ from starter_code_snippets import profile_one_model
 # Budget-aware probe allocation
 # ---------------------------------------------------------------------------
 # How many comparison trials to run per unknown model. Comparison uses
-# 2 probes per trial (unknown + reference). Edge-case testing costs a few
-# more probes. These stay well inside the 10,000-probe budgets.
-DEFAULT_COMPARISON_TRIALS = 15
-QUICK_COMPARISON_TRIALS = 6
+# 2 probes per trial (unknown + reference). Edge-case testing and type
+# detection add a few more. Balanced spend: stays well inside the 10k budgets.
+DEFAULT_COMPARISON_TRIALS = 35
+QUICK_COMPARISON_TRIALS = 10
 
 # Number of times to retry a whole model before recording a failure stub.
 PROFILER_ATTEMPTS = 3
@@ -86,11 +86,12 @@ def build_model_manifest(quick: bool):
             + api_manifest["by_pool"]["held_out"],
             key=lambda e: (order.get(e["pool_set"], 9), e["model_id"]),
         )
-        # References get fewer probing trials (calibration only); unknowns get full trials.
+        # References get fewer probing trials (calibration only); practice and
+        # held-out unknowns get the full trial count to stabilise agreement.
         t = trials if not quick else min(trials, 8)
         for e in entries:
             is_ref = e["pool_set"] == "reference"
-            per = min(t, 8) if (is_ref or e["pool_set"] == "held_out") else t
+            per = min(t, 8) if is_ref else t
             manifest.append((e["model_id"], e["n_features"], e["budget"], e["pool_set"], per))
         return manifest
 

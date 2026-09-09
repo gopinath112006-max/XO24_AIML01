@@ -166,6 +166,26 @@
     .no-weakness { font-size: 12px; color: var(--muted); font-style: italic; }
     .evidence { margin-top: 12px; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--card-border); padding-top: 10px; }
     .evidence span { margin-right: 14px; }
+    .warn-scalemismatch { color: var(--medium); font-weight: 600; }
+    .overview {
+      background: linear-gradient(135deg, #16213a, #1e293b);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 24px;
+    }
+    .overview h3 { font-size: 16px; margin-bottom: 12px; color: var(--text); }
+    .overview .ov-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .ov-family {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-width: 180px;
+      flex: 1;
+    }
+    .ov-family .f-name { font-size: 12px; color: var(--muted); }
+    .ov-family .f-count { font-size: 20px; font-weight: 700; margin-top: 2px; }
     .hidden { display: none; }
     footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; border-top: 1px solid var(--card-border); }
     .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 15px; }
@@ -248,12 +268,40 @@
       }).join('');
     }
 
+    function renderEvidence(p) {
+      const ev = p.evidence || {};
+      const ot = p.output_type || {};
+      const parts = [];
+      parts.push(`<span>🔍 Shape match: ${ev.shape_match ? 'yes' : 'no'}</span>`);
+      if (ev.type_consistent !== undefined) {
+        parts.push(`<span>🧬 Type consistent: ${ev.type_consistent === null ? 'unknown' : (ev.type_consistent ? 'yes' : 'no')}</span>`);
+      }
+      if (ot.classification !== undefined && ot.classification !== null) {
+        const n = ot.n_classes ? ` (${ot.n_classes}-class)` : '';
+        parts.push(`<span>🎯 Output: ${ot.classification ? 'classification' + n : 'regression'}</span>`);
+      }
+      if (p.correlation !== undefined && p.correlation !== null) {
+        parts.push(`<span>📈 corr=${p.correlation}</span>`);
+      }
+      if (ev.scale_mismatch) {
+        parts.push(`<span class="warn-scalemismatch">⚠️ Scale mismatch vs reference</span>`);
+      }
+      parts.push(`<span>🧪 Comparison probes: ${ev.comparison_probes || 0}</span>`);
+      parts.push(`<span>⚡ Edge case tests: ${ev.edge_case_tests || 0}</span>`);
+      if (p.class_coverage && p.class_coverage.observed && p.class_coverage.observed.length) {
+        parts.push(`<span>🎲 Classes seen: ${p.class_coverage.distinct_classes} (${p.class_coverage.observed.join(',')})</span>`);
+      }
+      parts.push(`<span>📍 Pool: ${POOL_LABEL[p.pool_set] || p.pool_set}</span>`);
+      return `<div class="evidence">${parts.join('')}</div>`;
+    }
+
     function renderCard(p) {
       const confCls = confClass(p.task_confidence);
-      const used = p.probe_utilization.used;
-      const budget = p.probe_utilization.budget;
+      const used = p.probe_utilization && p.probe_utilization.used;
+      const budget = p.probe_utilization && p.probe_utilization.budget;
       const pct = budget ? Math.round((used / budget) * 100) : 0;
       const ev = p.evidence || {};
+      const ot = p.output_type || {};
       return `
         <div class="model-card">
           <div class="top-row">
@@ -270,7 +318,11 @@
             </div>
             <div class="metric">
               <div class="m-label">Agreement w/ Reference</div>
-              <div class="m-value">${p.agreement_with_reference !== undefined ? (p.agreement_with_reference * 100).toFixed(0) + '%' : '—'}</div>
+              <div class="m-value">${p.agreement_with_reference !== undefined && p.agreement_with_reference !== null ? (p.agreement_with_reference * 100).toFixed(0) + '%' : '—'}</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Output Type</div>
+              <div class="m-value">${ot.classification === null || ot.classification === undefined ? 'unknown' : (ot.classification ? (ot.n_classes ? ot.n_classes + '-class classifier' : 'classifier') : 'regression')}</div>
             </div>
             <div class="metric">
               <div class="m-label">Probe Budget Used</div>
@@ -282,11 +334,28 @@
             <h5>Weaknesses / Edge Cases</h5>
             ${renderWeaknesses(p)}
           </div>
-          <div class="evidence">
-            <span>🔍 Shape match: ${ev.shape_match ? 'yes' : 'no'}</span>
-            <span>🧪 Comparison probes: ${ev.comparison_probes || 0}</span>
-            <span>⚡ Edge case tests: ${ev.edge_case_tests || 0}</span>
-            <span>📍 Pool: ${POOL_LABEL[p.pool_set] || p.pool_set}</span>
+          ${renderEvidence(p)}
+        </div>
+      `;
+    }
+
+    function renderOverview(profiles) {
+      const byFamily = {};
+      profiles.forEach(p => {
+        const task = p.inferred_task || 'unknown';
+        byFamily[task] = (byFamily[task] || 0) + 1;
+      });
+      const entries = Object.entries(byFamily).sort((a, b) => b[1] - a[1]);
+      return `
+        <div class="overview">
+          <h3>📊 Model Composition</h3>
+          <div class="ov-grid">
+            ${entries.map(([task, count]) => `
+              <div class="ov-family">
+                <div class="f-name">${task.replace(/_/g, ' ')}</div>
+                <div class="f-count">${count} model${count > 1 ? 's' : ''}</div>
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
@@ -340,6 +409,9 @@
           html += renderCard(p);
         }
         html += '</div>';
+        if (active === 'all') {
+          html = renderOverview(sorted) + html;
+        }
         main.innerHTML = html;
       } else {
         main.innerHTML = sorted.map(renderCard).join('');
