@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML Model Profiling Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --high: #16a34a;
+      --high-bg: #dcfce7;
+      --high-text: #14532d;
+      --medium: #d97706;
+      --medium-bg: #fef3c7;
+      --medium-text: #78350f;
+      --low: #dc2626;
+      --low-bg: #fee2e2;
+      --low-text: #7f1d1d;
+      --accent: #38bdf8;
+      --ref: #6366f1;
+      --prac: #f59e0b;
+      --held: #ec4899;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 24px 32px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border-bottom: 1px solid var(--card-border);
+    }
+    header h1 { font-size: 24px; margin-bottom: 4px; }
+    header p { color: var(--muted); font-size: 14px; }
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--card-border);
+      background: #16213a;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 18px;
+      min-width: 120px;
+      text-align: center;
+    }
+    .stat .value { font-size: 22px; font-weight: 700; }
+    .stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .controls select, .controls button {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .controls button.active { background: var(--accent); color: #0f172a; font-weight: 600; border-color: var(--accent); }
+    .controls label { font-size: 13px; color: var(--muted); }
+    main { padding: 24px 32px; max-width: 1200px; margin: 0 auto; }
+    .pool-section { margin-bottom: 32px; }
+    .pool-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .pool-header h2 { font-size: 18px; }
+    .pool-badge {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .pool-ref .pool-badge { background: var(--ref); }
+    .pool-prac .pool-badge { background: var(--prac); }
+    .pool-held .pool-badge { background: var(--held); }
+    .pool-meta { font-size: 12px; color: var(--muted); }
+    .model-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .model-card .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .model-id {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: "SF Mono", "Cascadia Code", Consolas, monospace;
+      color: var(--accent);
+    }
+    .model-task { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .conf {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .conf.high { background: var(--high-bg); color: var(--high-text); }
+    .conf.medium { background: var(--medium-bg); color: var(--medium-text); }
+    .conf.low { background: var(--low-bg); color: var(--low-text); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .metric {
+      background: #16213a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .metric .m-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric .m-value { font-size: 15px; font-weight: 600; margin-top: 3px; }
+    .meter {
+      height: 8px;
+      background: #0f172a;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .meter > div { height: 100%; background: var(--accent); border-radius: 999px; }
+    .weakness-list { margin-top: 12px; }
+    .weakness-list h5 { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .weakness {
+      display: inline-block;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--medium);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 12px;
+      margin: 0 6px 6px 0;
+    }
+    .weakness.sev-high { border-left-color: var(--low); }
+    .weakness.sev-medium { border-left-color: #d97706; }
+    .weakness.sev-low { border-left-color: var(--high); }
+    .no-weakness { font-size: 12px; color: var(--muted); font-style: italic; }
+    .evidence { margin-top: 12px; font-size: 12px; color: var(--muted); border-top: 1px dashed var(--card-border); padding-top: 10px; }
+    .evidence span { margin-right: 14px; }
+    .hidden { display: none; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; border-top: 1px solid var(--card-border); }
+    .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🤖 ML Model Profiling Dashboard</h1>
+    <p>13 undocumented models profiled through black-box API probing</p>
+  </header>
+
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="controls">
+    <label>Pool:</label>
+    <button data-filter="all" class="active">All</button>
+    <button data-filter="reference">Reference</button>
+    <button data-filter="practice">Practice</button>
+    <button data-filter="held_out">Held-Out</button>
+    <label style="margin-left:16px;">Sort by:</label>
+    <select id="sortSelect">
+      <option value="pool">Pool (default)</option>
+      <option value="confidence-desc">Confidence (high → low)</option>
+      <option value="confidence-asc">Confidence (low → high)</option>
+      <option value="agreement-desc">Agreement (high → low)</option>
+      <option value="probes-desc">Probes used (high → low)</option>
+    </select>
+  </div>
+
+  <main id="main"></main>
+
+  <footer>Evidence-backed profiling · Confidence reflects probe investment · Honest uncertainty over speculation</footer>
+
+  <script>
+    const POOL_ORDER = { reference: 0, practice: 1, held_out: 2 };
+    const POOL_LABEL = { reference: "Reference", practice: "Practice", held_out: "Held-Out" };
+
+    let allProfiles = [];
+
+    function loadProfiles() {
+      return fetch('profiles.json')
+        .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
+    }
+
+    function confClass(c) {
+      if (c >= 0.8) return 'high';
+      if (c >= 0.6) return 'medium';
+      return 'low';
+    }
+
+    function profileStats(profiles) {
+      const total = profiles.length;
+      const avgConf = profiles.reduce((s, p) => s + p.task_confidence, 0) / (total || 1);
+      const totalUsed = profiles.reduce((s, p) => s + p.probe_utilization.used, 0);
+      const totalBudget = profiles.reduce((s, p) => s + p.probe_utilization.budget, 0);
+      const high = profiles.filter(p => p.task_confidence >= 0.8).length;
+      const low = profiles.filter(p => p.task_confidence < 0.6).length;
+      return { total, avgConf, totalUsed, totalBudget, high, low };
+    }
+
+    function renderStats(profiles) {
+      const s = profileStats(profiles);
+      const pct = s.totalBudget ? ((s.totalUsed / s.totalBudget) * 100).toFixed(1) : "0";
+      document.getElementById('statsBar').innerHTML = `
+        <div class="stat"><div class="value">${s.total}</div><div class="label">Models</div></div>
+        <div class="stat"><div class="value">${(s.avgConf * 100).toFixed(0)}%</div><div class="label">Avg Confidence</div></div>
+        <div class="stat"><div class="value">${s.high}</div><div class="label">High Conf (&ge;80%)</div></div>
+        <div class="stat"><div class="value">${s.low}</div><div class="label">Low Conf (&lt;60%)</div></div>
+        <div class="stat"><div class="value">${s.totalUsed}/${s.totalBudget}</div><div class="label">Probes (${pct}%)</div></div>
+      `;
+    }
+
+    function renderWeaknesses(p) {
+      if (!p.weaknesses || p.weaknesses.length === 0) {
+        return '<p class="no-weakness">No significant weaknesses detected</p>';
+      }
+      return p.weaknesses.map(w => {
+        const sev = w.severity || 'medium';
+        return `<span class="weakness sev-${sev}"><b>${w.type.replace(/_/g, ' ')}:</b> ${w.description}</span>`;
+      }).join('');
+    }
+
+    function renderCard(p) {
+      const confCls = confClass(p.task_confidence);
+      const used = p.probe_utilization.used;
+      const budget = p.probe_utilization.budget;
+      const pct = budget ? Math.round((used / budget) * 100) : 0;
+      const ev = p.evidence || {};
+      return `
+        <div class="model-card">
+          <div class="top-row">
+            <div>
+              <div class="model-id">${p.model_id}</div>
+              <div class="model-task">${(p.inferred_task || 'unknown').replace(/_/g, ' ')}</div>
+            </div>
+            <span class="conf ${confCls}">${Math.round(p.task_confidence * 100)}%</span>
+          </div>
+          <div class="grid">
+            <div class="metric">
+              <div class="m-label">Performance</div>
+              <div class="m-value">${p.estimated_performance || 'Unknown'}</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Agreement w/ Reference</div>
+              <div class="m-value">${p.agreement_with_reference !== undefined ? (p.agreement_with_reference * 100).toFixed(0) + '%' : '—'}</div>
+            </div>
+            <div class="metric">
+              <div class="m-label">Probe Budget Used</div>
+              <div class="m-value">${used}/${budget} (${pct}%)</div>
+              <div class="meter"><div style="width:${Math.min(100, pct)}%"></div></div>
+            </div>
+          </div>
+          <div class="weakness-list">
+            <h5>Weaknesses / Edge Cases</h5>
+            ${renderWeaknesses(p)}
+          </div>
+          <div class="evidence">
+            <span>🔍 Shape match: ${ev.shape_match ? 'yes' : 'no'}</span>
+            <span>🧪 Comparison probes: ${ev.comparison_probes || 0}</span>
+            <span>⚡ Edge case tests: ${ev.edge_case_tests || 0}</span>
+            <span>📍 Pool: ${POOL_LABEL[p.pool_set] || p.pool_set}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function render(profiles) {
+      const active = document.querySelector('.controls button.active').dataset.filter;
+      let filtered = profiles;
+      if (active !== 'all') {
+        filtered = profiles.filter(p => p.pool_set === active);
+      }
+      renderStats(filtered);
+
+      const sortBy = document.getElementById('sortSelect').value;
+      const sorted = [...filtered];
+      switch (sortBy) {
+        case 'confidence-desc': sorted.sort((a, b) => b.task_confidence - a.task_confidence); break;
+        case 'confidence-asc': sorted.sort((a, b) => a.task_confidence - b.task_confidence); break;
+        case 'agreement-desc': sorted.sort((a, b) => (b.agreement_with_reference||0) - (a.agreement_with_reference||0)); break;
+        case 'probes-desc': sorted.sort((a, b) => b.probe_utilization.used - a.probe_utilization.used); break;
+        case 'pool':
+        default:
+          sorted.sort((a, b) =>
+            (POOL_ORDER[a.pool_set] ?? 9) - (POOL_ORDER[b.pool_set] ?? 9) ||
+            a.model_id.localeCompare(b.model_id)
+          );
+      }
+
+      const main = document.getElementById('main');
+      if (sorted.length === 0) {
+        main.innerHTML = '<div class="empty-state">No models in this pool yet.</div>';
+        return;
+      }
+
+      if (sortBy === 'pool' || active === 'all') {
+        let html = '';
+        let currentPool = null;
+        for (const p of sorted) {
+          if (p.pool_set !== currentPool) {
+            currentPool = p.pool_set;
+            const count = sorted.filter(x => x.pool_set === currentPool).length;
+            html += `
+              <div class="pool-section pool-${currentPool === 'reference' ? 'ref' : currentPool === 'practice' ? 'prac' : 'held'}">
+                <div class="pool-header">
+                  <h2>${POOL_LABEL[currentPool]}</h2>
+                  <span class="pool-badge">${POOL_LABEL[currentPool]}</span>
+                  <span class="pool-meta">${count} model${count > 1 ? 's' : ''}</span>
+                </div>
+            `;
+          }
+          html += renderCard(p);
+        }
+        html += '</div>';
+        main.innerHTML = html;
+      } else {
+        main.innerHTML = sorted.map(renderCard).join('');
+      }
+    }
+
+    function init() {
+      document.querySelectorAll('.controls button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          render(allProfiles);
+        });
+      });
+      document.getElementById('sortSelect').addEventListener('change', () => render(allProfiles));
+
+      loadProfiles()
+        .then(profiles => {
+          allProfiles = profiles;
+          render(profiles);
+        })
+        .catch(err => {
+          document.getElementById('main').innerHTML =
+            `<div class="empty-state">⚠️ Failed to load profiles.json — ${err.message}<br><br>Run the profiler to generate this file.</div>`;
+        });
+    }
+
+    init();
+  </script>
+</body>
+</html>
