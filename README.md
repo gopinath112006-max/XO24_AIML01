@@ -26,8 +26,12 @@ You're given access to 13 machine learning models through a simple REST API. You
 | Pool | Count | Models | Budget | Known? |
 |------|-------|--------|--------|--------|
 | Reference | 4 | ref_01 to ref_04 | 10,000 probes each | ✅ Documented |
-| Practice | 5 | prac_01 to prac_05 | 500 probes each | ❌ Unknown |
-| Held-Out | 4 | held_01 to held_04 | 150 probes each | ❌ Unknown |
+| Practice | 5 | prac_01 to prac_05 | 10,000 probes each | ❌ Unknown |
+| Held-Out | 4 | held_01 to held_04 | 10,000 probes each | ❌ Unknown |
+
+> Budget note: the live API reports `probe_budget: 10000` for every model (the
+> figures in the challenge docs — 500 practice / 150 held-out — are examples,
+> not the actual caps on this server).
 
 ### Reference Models (Your Calibration Points)
 
@@ -51,17 +55,24 @@ You're given access to 13 machine learning models through a simple REST API. You
 ```
 .
 ├── README.md                          ← This file
-├── PARTICIPANT_GUIDE.md               ← Official rules & FAQ
-├── general_reference_docs.md          ← Reference model specs
-├── starter_kit.py                     ← Working API examples (fill in credentials)
+├── Given/                             ← Official challenge pack (guide, refs, surprise-1 readme)
 │
-├── hackathon_concrete_plan.md         ← 6-phase execution plan (READ THIS FIRST)
-├── starter_code_snippets.py           ← Copy-paste functions for profiling
-├── CHEAT_SHEET.md                     ← 1-page quick reference (PRINT THIS)
+├── starter_kit.py                     ← API client (list_models / predict / get_usage)
+├── starter_code_snippets.py           ← Core profiling primitives (incl. deep compare)
+├── profiler.py                        ← Full 13-model profiling pipeline (--deep)
 │
-├── profiles.json                      ← OUTPUT: Pre-computed model profiles
-├── dashboard.html                     ← OUTPUT: Minimal viable dashboard
-└── probe_usage.json                   ← OUTPUT: Tracks probe budget utilization
+├── profiles.json                      ← OUTPUT: deep-profiled model profiles (est. accuracy)
+├── probe_usage.json                   ← OUTPUT: Tracks probe budget utilization
+├── dashboard.html                     ← OUTPUT: live dashboard (GitHub Pages)
+├── index.html                         ← Root redirect to dashboard.html
+│
+├── spot_the_difference.py             ← Surprise-1: two-model diff hunter
+├── probe_boundary.py                  ← Surprise-1: precise trigger isolator
+├── build_submission.py                ← Surprise-1: answer generator
+├── surprise1_answer.json              ← Surprise-1 answer (machine-readable)
+├── surprise1_answer.md                ← Surprise-1 answer (human-readable)
+├── surprise1_profile.json             ← Surprise-1 raw evidence
+└── surprise1_f0_sweep.json            ← Surprise-1 boundary sweep evidence
 ```
 
 ---
@@ -90,7 +101,7 @@ Expected output:
   ref_01               expects  70 features, budget 10000, pool_set=reference
   ref_02               expects  17 features, budget 10000, pool_set=reference
   ...
-  prac_01              expects  17 features, budget  500, pool_set=practice
+  prac_01              expects  17 features, budget 10000, pool_set=practice
   ...
 ```
 
@@ -225,7 +236,7 @@ Response:
 ```json
 {
   "ref_01": {"used": 5, "budget": 10000, "remaining": 9995},
-  "prac_01": {"used": 47, "budget": 500, "remaining": 453},
+  "prac_01": {"used": 47, "budget": 10000, "remaining": 9953},
   ...
 }
 ```
@@ -446,7 +457,7 @@ netlify deploy --prod --dir=.
 
 ## 📋 Probe Budget Allocation (Recommended)
 
-**Total available: ~43,100 probes across all models**
+**Total available: ~130,000 probes across all models (10,000 each × 13)**
 
 ```
 Calibration (ref models):       500 probes
@@ -563,6 +574,19 @@ You'll learn:
 7. **Start profiling** using starter_code_snippets.py
 
 **You've got 24 hours. Ship it.** 🚀
+
+---
+
+## 🎭 Surprise Challenge 1 — Spot the Difference
+
+Compare originals `s1_model_a` vs `s1_model_b` on the surprise-1 pool.
+
+**Answer (see `surprise1_answer.md`): the two models are DIFFERENT.**
+- Label agreement 98.1%, but strict agreement (labels **and** probabilities) 89.3% over 165 probes.
+- 3 inputs flip labels (always A→class 0, B→class 1); 14 more differ only in probabilities (B is overconfident).
+- **Precise trigger:** with all 34 features at center (10), raising **feature 0 into [37, 41]** makes A say class 0 while B says class 1 (f0 sweep, `probe_boundary.py`).
+
+Reproduce: `python spot_the_difference.py --report surprise1_profile.json`
 
 ---
 
