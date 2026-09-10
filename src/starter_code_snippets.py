@@ -3,7 +3,7 @@
 These are the core primitives used by profiler.py. Each function is
 self-contained so you can also import and use them interactively.
 
-    from starter_code_snippets import profile_one_model
+    from src.starter_code_snippets import profile_one_model
     profile = profile_one_model("prac_01", n_features=17, budget=500)
 
 Includes:
@@ -20,7 +20,7 @@ import random
 
 import numpy as np
 
-import config
+from src import config
 
 # ---------------------------------------------------------------------------
 # Determinism / reproducibility
@@ -37,7 +37,9 @@ def probe(model_id: str, inputs: list, **post_kwargs):
 
     Each row in `inputs` costs 1 probe regardless of batch size.
     """
-    import starter_kit  # reuse the retry/helper logic without circular import at module load
+    from src import (
+        starter_kit,  # reuse the retry/helper logic without circular import at module load
+    )
     return starter_kit.predict(model_id, inputs, **post_kwargs)
 
 
@@ -788,7 +790,7 @@ def generate_profile(model_id: str, pool_set: str, family: dict,
     # profile (that used to replace good agreement data with a placeholder).
     if usage is None:
         try:
-            from starter_kit import get_usage
+            from src.starter_kit import get_usage
             usage = get_usage()
         except RuntimeError:
             usage = {}

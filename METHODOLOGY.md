@@ -116,12 +116,13 @@ the reason instead of forcing a confident guess:
 
 ## 4. Files
 
-- `profiler.py` — runs the full workflow for all 13 models (`--deep` adds
+- `src/profiler.py` — runs the full workflow for all 13 models (`--deep` adds
   400-trial comparisons; resilient to transient network drops; saves
-  progress incrementally).
-- `starter_code_snippets.py` — the core primitives (probe, type detection,
+  progress incrementally). `src/strategy.py` drives the Compare & Infer
+  strategy behind `--strategy`.
+- `src/starter_code_snippets.py` — the core primitives (probe, type detection,
   agreement, edge cases, confidence).
-- `profiles.json` — the output this dashboard renders.
-- `probe_usage.json` — per-model probe budget tracking.
+- `data/profiles.json` — the output this dashboard renders.
+- `data/probe_usage.json` — per-model probe budget tracking.
 
 *Build fast. Profile smart. Ship harder.*

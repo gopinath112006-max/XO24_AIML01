@@ -14,20 +14,24 @@ Budget-aware: the surprise models have just 200 probes each, so every batch
 is deliberate and batched (one HTTP call per model per scan round).
 
 Run:
-    python spot_the_difference.py            # full comparison
-    python spot_the_difference.py --dry-run  # plan rows without spending
+    python scripts/spot_the_difference.py            # full comparison
+    python scripts/spot_the_difference.py --dry-run  # plan rows without spending
 """
 
 import argparse
 import json
 import os
 import random
+import sys
 
 import numpy as np
 
-import config
-import starter_kit
-from starter_code_snippets import infer_task_by_shape
+# Ensure the repository root is on sys.path so src/ modules are importable.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src import config, starter_kit
+from src.paths import DATA_DIR
+from src.starter_code_snippets import infer_task_by_shape
 
 POOL = config.SURPRISE1_POOL_URL
 MODEL_A = "s1_model_a"
@@ -421,7 +425,7 @@ def main():
         return
 
     result = compare_models(budget_cap=args.budget)
-    out = os.path.join(os.path.dirname(__file__), "surprise1_profile.json")
+    out = os.path.join(DATA_DIR, "surprise1_profile.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
     report_from_file(out)

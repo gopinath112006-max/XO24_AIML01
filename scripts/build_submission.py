@@ -2,14 +2,18 @@
 
 import json
 import os
+import sys
 
-HERE = os.path.dirname(__file__)
+# Ensure the repository root is on sys.path so src/ modules are importable.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.paths import DATA_DIR
 
 
 def main():
-    with open(os.path.join(HERE, "surprise1_profile.json"), encoding="utf-8") as f:
+    with open(os.path.join(DATA_DIR, "surprise1_profile.json"), encoding="utf-8") as f:
         profile = json.load(f)
-    with open(os.path.join(HERE, "surprise1_f0_sweep.json"), encoding="utf-8") as f:
+    with open(os.path.join(DATA_DIR, "surprise1_f0_sweep.json"), encoding="utf-8") as f:
         sweep = json.load(f)
 
     label_examples = []
@@ -61,7 +65,7 @@ def main():
         ],
     }
 
-    out_json = os.path.join(HERE, "surprise1_answer.json")
+    out_json = os.path.join(DATA_DIR, "surprise1_answer.json")
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(answer, f, indent=2, default=float)
 
@@ -116,7 +120,7 @@ With all 34 features pinned at center value **10** and only **feature 0** varied
 
 _Evidence files: `surprise1_profile.json`, `surprise1_f0_sweep.json`._
 """
-    out_md = os.path.join(HERE, "surprise1_answer.md")
+    out_md = os.path.join(DATA_DIR, "surprise1_answer.md")
     with open(out_md, "w", encoding="utf-8") as f:
         f.write(md)
 

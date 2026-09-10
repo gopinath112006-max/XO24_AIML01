@@ -308,7 +308,7 @@
     let generatedAt = null;
 
     function loadProfiles() {
-      return fetch('profiles.json')
+      return fetch('data/profiles.json')
         .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(data => {
           if (Array.isArray(data)) return data;               // legacy flat list
@@ -721,8 +721,8 @@
 
       Promise.all([
         loadProfiles(),
-        fetch('surprise1_answer.json').then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch('surprise2_answer.json').then(r => r.ok ? r.json() : null).catch(() => null)
+fetch('data/surprise1_answer.json').then(r => r.ok ? r.json() : null).catch(() => null),
+       fetch('data/surprise2_answer.json').then(r => r.ok ? r.json() : null).catch(() => null)
       ])
         .then(([profiles, s1, s2]) => {
           allProfiles = profiles;
@@ -736,7 +736,7 @@
         })
         .catch(err => {
           document.getElementById('main').innerHTML =
-            `<div class="empty-state">⚠️ Failed to load profiles.json — ${err.message}<br><br>Run the profiler to generate this file.</div>`;
+            `<div class="empty-state">⚠️ Failed to load data/profiles.json — ${err.message}<br><br>Run the profiler to generate this file.</div>`;
         });
     }
 

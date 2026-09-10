@@ -15,17 +15,17 @@ import unittest
 
 import numpy as np
 
-# Ensure the project root is on sys.path so local modules are importable.
-sys.path.insert(0, os.path.dirname(__file__))
+# Ensure the repository root is on sys.path so src/ modules are importable.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import config
-from config import STRATEGY_CONFIRM_AGREEMENT as CONFIRM
-from config import STRATEGY_CONTROL_MAX as CTRL
-from config import STRATEGY_DEEP_AMBIGUOUS as DEEP_AMB
-from config import STRATEGY_DEEP_CONVERGED as DEEP_CONV
-from config import STRATEGY_REJECT_AGREEMENT as LO
-from config import STRATEGY_SIBLING_CORROBORATE as SIB
-from strategy import _cap_deep_trials, _encode_rows, compute_agreement, decide_family
+from src import config
+from src.config import STRATEGY_CONFIRM_AGREEMENT as CONFIRM
+from src.config import STRATEGY_CONTROL_MAX as CTRL
+from src.config import STRATEGY_DEEP_AMBIGUOUS as DEEP_AMB
+from src.config import STRATEGY_DEEP_CONVERGED as DEEP_CONV
+from src.config import STRATEGY_REJECT_AGREEMENT as LO
+from src.config import STRATEGY_SIBLING_CORROBORATE as SIB
+from src.strategy import _cap_deep_trials, _encode_rows, compute_agreement, decide_family
 
 
 def _shape(task="mnist_digits_10class", reference="ref_01", n_features=70):

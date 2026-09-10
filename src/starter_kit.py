@@ -3,7 +3,7 @@
 Run this first (after filling in credentials in config.py) to confirm
 you can reach the API and that your TEAM_ID / API_KEY are correct.
 
-    python starter_kit.py
+    python -m src.starter_kit
 
 Expected output (trimmed):
     13 models available:
@@ -16,7 +16,7 @@ import sys
 
 import requests
 
-import config
+from src import config
 
 # ---------------------------------------------------------------------------
 # 1. API helper functions

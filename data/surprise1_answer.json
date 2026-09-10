@@ -11,7 +11,7 @@
   "confidence": 0.88,
   "are_they_different": true,
   "evidence": {
-    "probes_used_per_model": 196,
+    "probes_used_per_model": 165,
     "budget_per_model": 200,
     "label_agreement": 0.9811320754716981,
     "strict_agreement_labels_and_probs": 0.8930817610062893,

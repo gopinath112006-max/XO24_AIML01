@@ -14,11 +14,12 @@ import os
 import sys
 import unittest
 
-# Ensure the project root is on sys.path so local modules are importable.
-sys.path.insert(0, os.path.dirname(__file__))
+# Ensure the repository root is on sys.path so src/ modules are importable.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import config
-from starter_code_snippets import (
+from src import config
+from src.paths import DATA_DIR
+from src.starter_code_snippets import (
     _class_task_from_n,
     _feature_stats,
     _nonfinite,
@@ -303,10 +304,10 @@ class TestGenerateProfile(unittest.TestCase):
 class TestProfilesJsonStructure(unittest.TestCase):
     """Validate that the existing profiles.json has the expected schema."""
 
-    PROFILES_PATH = os.path.join(os.path.dirname(__file__), "profiles.json")
+    PROFILES_PATH = os.path.join(DATA_DIR, "profiles.json")
 
     @unittest.skipUnless(
-        os.path.exists(os.path.join(os.path.dirname(__file__), "profiles.json")),
+        os.path.exists(os.path.join(DATA_DIR, "profiles.json")),
         "profiles.json not found"
     )
     def test_profiles_json_valid(self):
@@ -317,7 +318,7 @@ class TestProfilesJsonStructure(unittest.TestCase):
         self.assertEqual(len(data["profiles"]), 13)
 
     @unittest.skipUnless(
-        os.path.exists(os.path.join(os.path.dirname(__file__), "profiles.json")),
+        os.path.exists(os.path.join(DATA_DIR, "profiles.json")),
         "profiles.json not found"
     )
     def test_each_profile_has_required_fields(self):
@@ -331,7 +332,7 @@ class TestProfilesJsonStructure(unittest.TestCase):
             self.assertEqual(missing, set(), f"{p.get('model_id', '?')} missing {missing}")
 
     @unittest.skipUnless(
-        os.path.exists(os.path.join(os.path.dirname(__file__), "profiles.json")),
+        os.path.exists(os.path.join(DATA_DIR, "profiles.json")),
         "profiles.json not found"
     )
     def test_confidence_bounds(self):

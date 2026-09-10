@@ -30,8 +30,8 @@ The API-independent helpers (compute_agreement, decide_family, _encode_rows,
 _cap_deep_trials) are unit-tested in test_strategy.py without any API calls.
 
 Run standalone:
-    python strategy.py --model prac_01
-    python strategy.py --model prac_01 --deep       # enable deep evidence phase
+    python -m src.strategy --model prac_01
+    python -m src.strategy --model prac_01 --deep   # enable deep evidence phase
 """
 
 import json
@@ -40,8 +40,8 @@ from typing import Any, cast
 
 import numpy as np
 
-import config
-from starter_code_snippets import (
+from src import config
+from src.starter_code_snippets import (
     _feature_stats,
     _nonfinite,
     _sample_input,

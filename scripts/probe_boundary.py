@@ -13,9 +13,13 @@ Budget so far: ~186/200 per model; this run adds ~10.
 
 import json
 import os
+import sys
 
-import config
-import starter_kit
+# Ensure the repository root is on sys.path so src/ modules are importable.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src import config, starter_kit
+from src.paths import DATA_DIR
 
 POOL = config.SURPRISE1_POOL_URL
 MODEL_A = "s1_model_a"
@@ -100,7 +104,7 @@ def main():
         "A_sweep": full_a, "B_sweep": full_b,
         "A_targeted": a_data, "B_targeted": b_data,
     }
-    out = os.path.join(os.path.dirname(__file__), "surprise1_f0_sweep.json")
+    out = os.path.join(DATA_DIR, "surprise1_f0_sweep.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
     print(f"\nsaved -> {out}")

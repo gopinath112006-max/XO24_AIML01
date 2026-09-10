@@ -3,14 +3,14 @@
 Profiles all 13 models following the 6-phase strategy from the README,
 respecting per-model probe budgets, and writes:
 
-  - profiles.json      (all model profiles, replaces sample placeholders)
-  - probe_usage.json   (per-model probe utilization tracker)
+  - data/profiles.json      (all model profiles, replaces sample placeholders)
+  - data/probe_usage.json   (per-model probe utilization tracker)
 
 Run:
-    python profiler.py            # profile everything
-    python profiler.py --quick    # few comparison trials, low probe spend (dry-run/live check)
-    python profiler.py --models prac_01 prac_02   # profile only specific models
-    python profiler.py --strategy # Compare & Infer strategy (new default recommendation)
+    python -m src.profiler            # profile everything
+    python -m src.profiler --quick    # few comparison trials, low probe spend (dry-run/live check)
+    python -m src.profiler --models prac_01 prac_02   # profile only specific models
+    python -m src.profiler --strategy # Compare & Infer strategy (new default recommendation)
 
 Phase mapping:
   Phase 0-1: verify API access (uses starter_kit).
@@ -26,10 +26,10 @@ import socket
 import sys
 import time
 
-import config
-import starter_kit
-from starter_code_snippets import profile_one_model
-from strategy import run_strategy
+from src import config, starter_kit
+from src.paths import DATA_DIR
+from src.starter_code_snippets import profile_one_model
+from src.strategy import run_strategy
 
 # ---------------------------------------------------------------------------
 # Budget-aware probe allocation
@@ -136,7 +136,7 @@ def write_profiles(profiles: list):
     freshness timestamp. On ``--models`` runs, only the requested models are
     replaced; everything else keeps its prior profile (deterministic order).
     """
-    path = os.path.join(os.path.dirname(__file__), "profiles.json")
+    path = os.path.join(DATA_DIR, "profiles.json")
     existing = _load_existing_profiles(path)
     replaced = {p["model_id"] for p in profiles}
     merged = [p for p in existing if p["model_id"] not in replaced]
@@ -170,7 +170,7 @@ def record_usage(manifest):
             "remaining": max(0, budget - used),
             "percent_used": round((used / budget) * 100, 1) if budget else 0.0,
         }
-    path = os.path.join(os.path.dirname(__file__), "probe_usage.json")
+    path = os.path.join(DATA_DIR, "probe_usage.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
     print(f"Wrote probe usage -> {path}")

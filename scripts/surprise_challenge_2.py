@@ -5,18 +5,21 @@ evidence gathered. Uses existing profile data to simulate a probe budget cut
 and show the resulting confidence drop.
 
 Run:
-    python surprise_challenge_2.py
+    python scripts/surprise_challenge_2.py
 
 Outputs:
-    surprise2_answer.json  — before/after comparison for the dashboard
+    data/surprise2_answer.json  — before/after comparison for the dashboard
 """
 
 import json
 import os
+import sys
 
-from starter_code_snippets import calculate_confidence
+# Ensure the repository root is on sys.path so src/ modules are importable.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-HERE = os.path.dirname(__file__)
+from src.paths import DATA_DIR
+from src.starter_code_snippets import calculate_confidence
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -60,7 +63,7 @@ def _simulate_confidence(profile: dict, n_probes: int) -> float:
 def run_surprise_challenge_2():
     """Generate Surprise Challenge 2 answer from existing profile data."""
     # Load existing profiles
-    profiles_path = os.path.join(HERE, "profiles.json")
+    profiles_path = os.path.join(DATA_DIR, "profiles.json")
     with open(profiles_path, encoding="utf-8") as f:
         data = json.load(f)
 
@@ -162,7 +165,7 @@ def run_surprise_challenge_2():
         ],
     }
 
-    out_json = os.path.join(HERE, "surprise2_answer.json")
+    out_json = os.path.join(DATA_DIR, "surprise2_answer.json")
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(answer, f, indent=2, default=float)
     print(f"\nWrote {out_json}")

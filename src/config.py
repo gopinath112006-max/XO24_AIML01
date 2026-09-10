@@ -6,14 +6,15 @@ values out of version control (they are secrets).
 
 import os
 
+from src.paths import CRED_FILE as _CRED_FILE
+
 # ---------------------------------------------------------------------------
 # Credentials & endpoint
 # ---------------------------------------------------------------------------
 # Secrets are read from (in priority order):
 #   1. Environment variables HACKATHON_TEAM_ID / HACKATHON_API_KEY
-#   2. An optional ignored .credentials.py file (see .gitignore)
+#   2. An optional ignored .credentials.py file at the repo root (see .gitignore)
 # Placeholder defaults keep the code importable until you add real values.
-_CRED_FILE = os.path.join(os.path.dirname(__file__), ".credentials.py")
 if os.path.exists(_CRED_FILE):
     _ns = {}
     with open(_CRED_FILE, encoding="utf-8") as _f:
@@ -99,7 +100,7 @@ def load_manifest_from_api():
     budgets and pool sets. This replaces the hard-coded tables.
     """
     try:
-        from starter_kit import list_models
+        from src.starter_kit import list_models
         models = list_models()
     except Exception:
         return None
