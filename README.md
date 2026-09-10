@@ -18,13 +18,19 @@ static dashboard.**
 1. [What this project does](#what-this-project-does)
 2. [The model pool](#the-model-pool)
 3. [Repository layout](#repository-layout)
-4. [Quickstart](#quickstart)
-5. [Command reference](#command-reference)
-6. [Compare & Infer strategy](#compare--infer-strategy)
-7. [Outputs & dashboard](#outputs--dashboard)
-8. [Deployment](#deployment)
-9. [Quality gates](#quality-gates)
-10. [Troubleshooting](#troubleshooting)
+4. [Architecture](#architecture)
+5. [Quickstart](#quickstart)
+6. [Command reference](#command-reference)
+7. [Working code](#working-code)
+8. [Compare & Infer strategy](#compare--infer-strategy)
+9. [Technical implementation](#technical-implementation)
+10. [Innovation](#innovation)
+11. [Future impact](#future-impact)
+12. [Outputs & dashboard](#outputs--dashboard)
+13. [Deployment](#deployment)
+14. [Test, lint, type-check](#test-lint-type-check)
+15. [Troubleshooting](#troubleshooting)
+16. [Commit history](#commit-history)
 
 ---
 
@@ -109,6 +115,53 @@ python -c "import src.starter_kit as k, json; print(json.dumps(k.get_usage(), in
 `data/`, `src/`, `scripts/`, `tests/` mirror the pipeline stages:
 **probe → infer → evidence → artifacts → render**.
 
+## Architecture
+
+Two layers, cleanly separated by committed, reviewable JSON artifacts.
+
+```
+OFFLINE · Python pipeline (needs API + credentials)
+  src/config.py ──────────────────────────┐
+  (pools · families · strategy tuning)    ┴─▶ src/starter_kit.py — API client
+                                             list_models() / predict() / get_usage()
+                                                       │
+                                                       ▼
+  src/starter_code_snippets.py — core primitives:
+     probe() → infer_task_by_shape/type() → compare_with_reference()
+          → test_edge_cases() → calculate_confidence()
+                                                       ▲
+  src/strategy.py — Compare & Infer: type detection → degeneracy screen
+     → cross-reference screen → decide_family → deep agreement
+                                                       │ pairs with
+  src/profiler.py — CLI: python -m src.profiler --strategy --deep  (all 13)
+                                                       │ writes precomputed artifacts
+                                                       ▼
+                                              data/*.json
+                              profiles.json · probe_usage.json · surprise*_answer.json
+
+RUNTIME · static web (no API, no server)
+  index.html ──▶ dashboard.html ── fetch('data/*.json') ──▶ 13 cards + pool & Surprise filters
+  Hosts: GitHub Pages (auto-deploy on push) · Vercel (auto-deploy, cleanUrls)
+```
+
+| Module | Responsibility |
+|--------|----------------|
+| `src/config.py` | credentials, pool URLs, families, strategy thresholds |
+| `src/starter_kit.py` | API client — connect, discover models, predict, usage |
+| `src/starter_code_snippets.py` | profiling primitives — probe, inference, agreement, edge cases, confidence |
+| `src/strategy.py` | six-phase Compare & Infer strategy |
+| `src/profiler.py` | orchestration — whole-pool runs, budget ledger, JSON outputs |
+| `scripts/*.py` | Surprise 1 & 2 tooling (live probes → submission artifacts) |
+| `tests/` | 63 unit tests, no API calls |
+| `data/*.json` | precomputed, versioned results the dashboard renders |
+| `dashboard.html` / `index.html` | zero-dependency renderer + redirect |
+
+**End-to-end flow:** connect (`starter_kit`) → discover (`list_models`) → probe
+(`probe`, 1 probe per row) → infer + collect evidence (`infer_task_by_*`,
+`compare_with_reference`, `test_edge_cases`) → honest confidence
+(`calculate_confidence`) → serialize (`profiler` → `data/*.json`) → render
+(`dashboard.html`, precomputed results only).
+
 ## Quickstart
 
 ```bash
@@ -152,6 +205,43 @@ python -m http.server 8000        # http://localhost:8000
 Run `python -m <module> --help` for full flag lists. Commands assume the
 repository root as the working directory.
 
+## Working code
+
+The entire pipeline in ~15 lines — run from the repo root with credentials
+configured (see **Quickstart**). These are the exact functions `profiler.py`
+uses; a handful of probes are spent per call.
+
+```python
+from src import starter_kit as kit
+from src.starter_code_snippets import (
+    calculate_confidence,
+    compare_with_reference,
+    infer_task_by_shape,
+    probe,
+)
+
+# 1. Connect to the API and discover the available models (free)
+models = kit.list_models()
+print(models[0]["model_id"])                          # e.g. ref_01
+
+# 2. Probe a black-box model (batched; 1 probe per row)
+resp = probe("prac_01", [[5.1, 3.5, 1.4, 0.2], [6.2, 3.4, 5.4, 2.3]])
+print(resp["predictions"])                            # e.g. [1, 2]
+
+# 3. Shape matching (free) → task family + matched reference
+family = infer_task_by_shape(n_features=17)           # wine_classification_3class
+
+# 4. Agreement vs the matched reference (spends probes)
+rate, n_comp, _comparisons = compare_with_reference("prac_01", 17, n_trials=15)
+
+# 5. Confidence derived from evidence, never guessed
+confidence = calculate_confidence(
+    shape_match=True, type_consistent=True,
+    agreement_rate=rate, n_comparison_probes=n_comp, n_features=17,
+)
+print(f"task={family['task']} · agreement={rate:.3f} · confidence={confidence:.3f}")
+```
+
 ## Compare & Infer strategy
 
 `src/strategy.py` runs six evidence phases per model:
@@ -173,6 +263,73 @@ repository root as the working directory.
 Every profile carries a full `strategy` audit trail (verdict, screen results,
 deep agreement, probe ledger). The confidence formula and accuracy-range
 conversion are documented in [`METHODOLOGY.md`](METHODOLOGY.md).
+
+## Technical implementation
+
+**Stack.** Python 3.10+ with `requests` and `numpy` on the analysis side; a
+hand-written static HTML/JS dashboard with no build step and no server at
+runtime. All heavy lifting is done offline — the site only reads JSON.
+
+**API contract** (the model pool, authenticated via `x-team-key`):
+
+| Endpoint | Cost | Purpose |
+|----------|------|---------|
+| `GET /models` | free | list models, expected features, budget, pool |
+| `POST /model/{id}/predict` | 1 probe per row (batch size irrelevant) | send `{team_id, inputs: [[…]]}` |
+| `GET /team/{team}/usage` | free | per-model probe usage |
+
+**Probe accounting.** Every prediction is counted in a per-model ledger
+(`data/probe_usage.json`). The strategy keeps a **300-probe safety margin** on
+shared reference models and adapts depth (150 trials when decisive, 400 when
+ambiguous). `probe()` batches rows into single HTTP calls, so N rows cost N
+probes but only one round-trip.
+
+**Algorithmic core** (details in `METHODOLOGY.md`):
+- six-phase **Compare & Infer** (`strategy.py`) — type detection → degeneracy
+  screen → cross-reference screen → decision tree → budget-aware deep
+  agreement → weakness suite;
+- evidence-weighted **confidence** formula:
+  `0.20 shape/type + 0.10 coverage + up to 0.45 agreement + 0.15 probe
+  investment − penalties`, capped at 0.99;
+- accuracy range from agreement: `E_min = A·r` and `E_max = A÷r`, using each
+  reference's declared performance.
+
+**Quality gates.** 63 unit tests with no API calls (`pytest`), `ruff check .`
+clean, `mypy` clean for new modules. Deployment is CI-free: a GitHub Actions
+workflow (`pages.yml`) and Vercel both rebuild from `main` on push.
+
+## Innovation
+
+- **Cross-reference screen, not naive agreement.** A single shared batch goes
+  to the unknown, its shape-matched reference, `row[:k]` sub-slice controls
+  from smaller families, and same-feature sibling unknowns — so a family
+  verdict comes from a whole agreement vector, not one lucky score.
+- **Degeneracy screen before spending.** A model that always emits one class
+  (`held_04`) is caught with diverse + extreme inputs *before* any comparison
+  probes are burned on it — honesty and budget efficiency in one move.
+- **Probability-level evidence.** Labels on the Surprise-1 pair agree 98.1%,
+  but labels *and* probability vectors agree only 89.3% over 165 probes. That
+  gap is the proof they are different models — and it pins the trigger
+  (`f0 ∈ [37, 41]` flips A→0, B→1).
+- **Confidence tracks evidence.** Surprise 2 shows the *same* underlying
+  signal scoring 0.45 with 400 probes but only 0.304 with 5 — confidence is a
+  property of evidence, never a guess.
+- **Honest `unclassified`.** When the shared reference budget is exhausted
+  server-side, the pipeline reports "no verdict" instead of fabricating one.
+
+## Future impact
+
+- **Reproducible rerun.** On an organizer budget reset, `python -m src.profiler
+  --strategy --deep` regenerates full evidence-backed profiles for all 13
+  models and one push redeploys the dashboard.
+- **A general black-box audit toolkit.** Point `config.py` at any pool, add
+  new families, and the same strategy audits any undocumented model API — a
+  "model card without weights" for ML-as-a-service vetting.
+- **Continuous model health.** The offline/static split makes scheduled
+  re-probing easy: re-run → regenerate `data/` → redeploy. Drift, collapse, or
+  over-confidence in a served model becomes visible on the dashboard.
+- **Auditable reporting.** Every conclusion carries its probe evidence and
+  confidence, so human reviewers (or graders) can check any number.
 
 ## Outputs & dashboard
 
@@ -245,6 +402,38 @@ python -m mypy --python-version 3.12 src/   # numpy-2 workaround, see below
 | DNS/connectivity churn | `profiler.py` auto-waits and retries; confirm `GENERAL_POOL_URL` is reachable. |
 | Dashboard: missing profiles | Run `python -m src.profiler --strategy --deep`, commit `data/profiles.json`; Pages re-deploys on push. |
 | `No module named 'src'` / `starter_kit` | Run from the repo root (all documented commands assume it). |
+
+## Commit history
+
+All 25 commits on `main`, newest first.
+
+| Commit | Phase | What changed |
+|--------|-------|--------------|
+| `45803cd` | Deploy | Add `vercel.json` for clean URLs on Vercel |
+| `24ceb2c` | Cleanup | Remove `Given/` references; reword METHODOLOGY citation |
+| `b5c734f` | Structure | Restructure: `src/` package, `scripts/`, `tests/`, `data/`; rebuild README; dashboard fetches `data/` |
+| `3af1e36` | Docs | Final-deployment README refresh; fix dashboard header HTML |
+| `d08ec52` | Strategy | Compare & Infer strategy + light-theme dashboard + Surprise filters |
+| `e268603` | Compliance | Fix all Given-folder compliance gaps |
+| `23c7e9c` | Surprises | Add Surprise Challenge 2; fix Given-analysis bugs |
+| `c1e025d` | Polish | Lint, tests, dashboard surprise section, degenerate diagnosis |
+| `ae0b6b4` | Docs | Correct live budgets (10k/model); Surprise-1 answer section |
+| `5520e3d` | Surprises | Deep-profile unknowns (est. accuracy); Spot-the-Difference tooling + answer |
+| `318e42e` | Data | Regenerate 13-model probe usage |
+| `a844fe9` | Refine | Structured inputs; degenerate fix; envelope timestamp; dashboard confidence UI |
+| `ef1a26e` | Deploy | Add root `index.html` redirect to dashboard |
+| `7ce22a3` | Deploy | Add GitHub Pages workflow |
+| `a28392c` | Refine | Type detection for no-prob classifiers; batch probes; degenerate penalty; refresh data |
+| `a880940` | Pipeline | Network resilience; profile all 13 models with real data |
+| `9aa1958` | Pipeline | Add profiling pipeline (config, starter kit, snippets, profiler) |
+| `706f68d` | Merge | Merge remote; keep canonical README |
+| `07ef1b5` | Dashboard | Add model profiling dashboard + sample profiles |
+| `b215d68` | Docs | README: challenge details and resources |
+| `d44e724` | Cleanup | Remove `README_PROJECT.md` |
+| `dfdb63c` | Docs | README: project contents |
+| `116b977` | Merge | Merge `main` (remote sync) |
+| `4481889` | Docs | Add README |
+| `99b4b92` | Boot | Initial commit |
 
 ---
 
