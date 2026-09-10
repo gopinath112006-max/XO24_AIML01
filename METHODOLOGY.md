@@ -84,7 +84,8 @@ Cap at 0.99 — we never claim 100% certainty.
 
 Raw agreement overstates an unknown's quality because the reference model is
 itself imperfect. We convert agreement `A` into an accuracy range using the
-reference's **declared** performance `r` from `general_reference_docs.md`
+reference's **declared** performance `r` from the organizers' published
+reference docs
 (e.g. `ref_01` = 0.957, `ref_02` = 0.963, `ref_03` = 0.977):
 
 ```
